@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NAME-O-MATIC — Physics Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#07070f;color:#eeeeff;font-family:'Nunito',sans-serif;overflow:hidden;}
+#canvas3d{width:100vw;height:100vh;display:block;cursor:grab;}
+#canvas3d:active{cursor:grabbing;}
+
+#ui{position:fixed;top:0;left:0;right:0;z-index:10;background:rgba(7,7,15,.92);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.07);padding:8px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.logo{font-family:'Bangers',cursive;font-size:1.4rem;letter-spacing:3px;background:linear-gradient(135deg,#ff6b35,#ffd23f,#06ffa5);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;flex-shrink:0;}
+.btn{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:6px 13px;font-family:'Fredoka One',cursive;font-size:.78rem;color:#eeeeff;cursor:pointer;transition:all .2s ease;white-space:nowrap;}
+.btn:hover{background:rgba(255,255,255,.14);transform:translateY(-1px);}
+.btn.active{background:rgba(6,255,165,.15);border-color:rgba(6,255,165,.35);color:#06ffa5;}
+.btn.danger{background:rgba(255,107,53,.12);border-color:rgba(255,107,53,.3);color:#ff6b35;}
+.sep{width:1px;height:24px;background:rgba(255,255,255,.1);flex-shrink:0;}
+
+#info{position:fixed;bottom:16px;left:16px;z-index:10;background:rgba(7,7,15,.88);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 16px;font-size:.72rem;font-weight:700;color:#55558a;max-width:260px;line-height:1.9;}
+#info b{color:#06ffa5;}
+
+#stats{position:fixed;top:64px;right:16px;z-index:10;background:rgba(7,7,15,.88);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 16px;font-family:'Bangers',cursive;font-size:.9rem;letter-spacing:1px;min-width:130px;}
+.stat-row{display:flex;justify-content:space-between;gap:12px;color:#55558a;border-bottom:1px solid rgba(255,255,255,.04);padding:2px 0;}
+.stat-row:last-child{border:none;}
+.stat-val{color:#ffd23f;}
+
+#windDir{position:fixed;bottom:16px;right:16px;z-index:10;background:rgba(7,7,15,.88);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px;text-align:center;font-size:.65rem;color:#55558a;font-weight:700;}
+#windArrow{font-size:1.6rem;display:block;margin-bottom:4px;transition:transform .5s ease;}
+</style>
+</head>
+<body>
+
+<div id="ui">
+  <div class="logo">⚽ PHYSICS LAB</div>
+  <div class="sep"></div>
+  <button class="btn active" id="btnKick" onclick="kickBall()">⚽ Kick Ball</button>
+  <button class="btn" onclick="penaltyShot()">🥅 Penalty</button>
+  <button class="btn" onclick="cornerKick()">🚩 Corner</button>
+  <button class="btn" onclick="freekick()">🎯 Free Kick</button>
+  <div class="sep"></div>
+  <button class="btn" id="btnWave" onclick="toggleWave()">🌊 Crowd Wave</button>
+  <button class="btn" onclick="toggleWind()">💨 Wind</button>
+  <button class="btn" onclick="addBall()">➕ More Balls</button>
+  <button class="btn danger" onclick="resetScene()">🔄 Reset</button>
+  <div class="sep"></div>
+  <button class="btn" onclick="window.location.href='app.html'">← Back to App</button>
+</div>
+
+<canvas id="canvas3d"></canvas>
+
+<div id="info">
+  <b>Physics Lab Controls</b><br>
+  🖱️ Drag to rotate<br>
+  🖱️ Right-drag to pan<br>
+  🖱️ Scroll to zoom<br>
+  ⚽ Click Kick Ball to shoot<br>
+  🌊 Wave does a crowd Mexican wave<br>
+  💨 Wind affects ball trajectory
+</div>
+
+<div id="stats">
+  <div class="stat-row"><span>FPS</span><span class="stat-val" id="sFps">60</span></div>
+  <div class="stat-row"><span>Balls</span><span class="stat-val" id="sBalls">1</span></div>
+  <div class="stat-row"><span>Goals</span><span class="stat-val" id="sGoals">0</span></div>
+  <div class="stat-row"><span>Wind</span><span class="stat-val" id="sWind">OFF</span></div>
+  <div class="stat-row"><span>Wave</span><span class="stat-val" id="sWave">OFF</span></div>
+</div>
+
+<div id="windDir">
+  <span id="windArrow">⬆️</span>
+  <span id="windStrength">Wind: 0 m/s</span>
+</div>
+
+<script>
+// ── THREE.JS SETUP ─────────────────────────────────────────────
+var W = window.innerWidth, H = window.innerHeight;
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(0x050510);
+scene.fog = new THREE.FogExp2(0x050510, 0.004);
+
+var camera = new THREE.PerspectiveCamera(55, W/H, 0.1, 600);
+camera.position.set(0, 55, 110);
+camera.lookAt(0, 5, 0);
+
+var renderer = new THREE.WebGLRenderer({canvas: document.getElementById('canvas3d'), antialias: true});
+renderer.setSize(W, H);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+// ── LIGHTS ─────────────────────────────────────────────────────
+var amb = new THREE.AmbientLight(0x223355, 0.4);
+scene.add(amb);
+var sun = new THREE.DirectionalLight(0xfff0cc, 0.9);
+sun.position.set(80, 160, 60);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -120; sun.shadow.camera.right = 120;
+sun.shadow.camera.top  =  90;  sun.shadow.camera.bottom = -90;
+scene.add(sun);
+// Floodlights
+[[-52,-50],[52,-50],[-52,50],[52,50]].forEach(function(p){
+  var fl = new THREE.PointLight(0xfff5cc, 2.8, 200);
+  fl.position.set(p[0], 55, p[1]);
+  scene.add(fl);
+});
+
+// ── PITCH ──────────────────────────────────────────────────────
+var pitchGroup = new THREE.Group();
+scene.add(pitchGroup);
+
+// Surround
+var surround = new THREE.Mesh(new THREE.PlaneGeometry(130, 95), new THREE.MeshLambertMaterial({color:0x2a1a0a}));
+surround.rotation.x = -Math.PI/2; surround.position.y = -0.05;
+surround.receiveShadow = true; pitchGroup.add(surround);
+
+// Grass stripes
+for (var si=0; si<10; si++) {
+  var sg = new THREE.Mesh(new THREE.PlaneGeometry(9.8, 68), new THREE.MeshLambertMaterial({color: si%2===0 ? 0x1e6b1e : 0x165416}));
+  sg.rotation.x = -Math.PI/2; sg.position.set(-45+si*9.8+4.9, 0.01, 0);
+  sg.receiveShadow = true; pitchGroup.add(sg);
+}
+
+// Lines
+function pitchLine(x1,z1,x2,z2) {
+  var pts = [new THREE.Vector3(x1,0.08,z1), new THREE.Vector3(x2,0.08,z2)];
+  var geo = new THREE.BufferGeometry().setFromPoints(pts);
+  pitchGroup.add(new THREE.Line(geo, new THREE.LineBasicMaterial({color:0xffffff,opacity:.85,transparent:true})));
+}
+[[-50,-34,50,-34],[-50,34,50,34],[-50,-34,-50,34],[50,-34,50,34],[0,-34,0,34],
+ [-50,-20,-34,-20],[-50,20,-34,20],[-34,-20,-34,20],[50,-20,34,-20],[50,20,34,20],[34,-20,34,20]
+].forEach(function(l){ pitchLine(l[0],l[1],l[2],l[3]); });
+
+// Centre circle
+var cc = new THREE.Mesh(new THREE.RingGeometry(9,9.35,48), new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide,opacity:.8,transparent:true}));
+cc.rotation.x=-Math.PI/2; cc.position.y=0.09; pitchGroup.add(cc);
+
+// ── GOALS ──────────────────────────────────────────────────────
+function makeGoal(x) {
+  var g = new THREE.Group();
+  var mat = new THREE.MeshLambertMaterial({color:0xffffff});
+  [[-3.66],[3.66]].forEach(function(z){
+    var p = new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,2.44,8),mat);
+    p.position.set(0,1.22,z[0]); p.castShadow=true; g.add(p);
+  });
+  var cross = new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,7.32,8),mat);
+  cross.rotation.z=Math.PI/2; cross.position.set(0,2.44,0); g.add(cross);
+  var net = new THREE.Mesh(new THREE.BoxGeometry(1.5,2.44,7.32), new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true,opacity:.15,transparent:true}));
+  net.position.set(x>0?0.75:-0.75,1.22,0); g.add(net);
+  g.position.x = x; scene.add(g); return g;
+}
+var goalL = makeGoal(-51); var goalR = makeGoal(51);
+
+// ── STANDS ─────────────────────────────────────────────────────
+var STAND_FANS = [];
+function makeStand(w,d,h,x,z,ry) {
+  var g = new THREE.Group();
+  var struc = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshLambertMaterial({color:0x0d1520}));
+  struc.position.y=h/2; struc.castShadow=true; g.add(struc);
+  var seat = new THREE.Mesh(new THREE.BoxGeometry(w-2,h*.6,d*.45), new THREE.MeshLambertMaterial({color:0xe8012c}));
+  seat.position.set(0,h*.28,-d*.24); g.add(seat);
+  var roof = new THREE.Mesh(new THREE.BoxGeometry(w+3,.8,d*.4), new THREE.MeshLambertMaterial({color:0x111825,opacity:.85,transparent:true}));
+  roof.position.set(0,h+.4,-d*.22); g.add(roof);
+  g.position.set(x,0,z); g.rotation.y=ry; scene.add(g);
+
+  // Add fan dots
+  var rows=6, cols=Math.floor(w/5);
+  for(var r=0;r<rows;r++){
+    for(var cc2=0;cc2<cols;cc2++){
+      var fh=new THREE.Mesh(new THREE.SphereGeometry(.45,4,4),new THREE.MeshLambertMaterial({color:Math.random()>.2?0xe8012c:0xffffff}));
+      var lx=-w/2+3+cc2*(w-6)/(cols-1);
+      var lz=-d*.35+r*1.8;
+      var ly=h*.15+r*2.2+.5;
+      // Transform to stand local space then to world
+      var v=new THREE.Vector3(lx,ly,lz).applyEuler(new THREE.Euler(0,ry,0));
+      fh.position.set(x+v.x,v.y,z+v.z);
+      fh._baseY=fh.position.y;
+      fh._waveOffset=(Math.cos(ry)*lx+Math.sin(ry)*lz)*0.1;
+      scene.add(fh);
+      STAND_FANS.push(fh);
+    }
+  }
+}
+makeStand(112,18,26, 0,-52, 0);
+makeStand(112,18,26, 0, 52, Math.PI);
+makeStand(78,16,20,-58, 0, Math.PI/2);
+makeStand(78,16,20, 58, 0,-Math.PI/2);
+
+// ── PHYSICS STATE ──────────────────────────────────────────────
+var BALLS = [];
+var GRAVITY = -18;
+var WIND = { active:false, x:0, z:0, strength:0, angle:0 };
+var WAVE = { active:false, time:0 };
+var GOALS = 0;
+var FPS_COUNTER = 0, FPS_LAST = Date.now();
+
+function Ball(x,y,z,vx,vy,vz) {
+  var geo = new THREE.SphereGeometry(1.1, 16, 12);
+  // Make it look like a football with dark patches
+  var mat = new THREE.MeshLambertMaterial({color:0xf5f5dc});
+  var mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(x,y,z);
+  mesh.castShadow = true;
+  scene.add(mesh);
+
+  // Hex patches
+  var patchMat = new THREE.MeshLambertMaterial({color:0x111111});
+  for(var i=0;i<6;i++){
+    var patch = new THREE.Mesh(new THREE.CircleGeometry(.42,6), patchMat);
+    var ph = Math.random()*Math.PI, pt = Math.random()*Math.PI*2;
+    patch.position.set(Math.sin(ph)*Math.cos(pt)*1.11, Math.sin(ph)*Math.sin(pt)*1.11, Math.cos(ph)*1.11);
+    patch.lookAt(0,0,0); patch.rotateX(Math.PI);
+    mesh.add(patch);
+  }
+
+  // Shadow disc on ground
+  var shadow = new THREE.Mesh(new THREE.CircleGeometry(1.1,16), new THREE.MeshBasicMaterial({color:0x000000,opacity:.25,transparent:true}));
+  shadow.rotation.x=-Math.PI/2; shadow.position.y=0.02;
+  scene.add(shadow);
+
+  return { mesh:mesh, shadow:shadow, vx:vx||0, vy:vy||0, vz:vz||0, spin:Math.random()*.3-.15, active:true };
+}
+
+function addBall() {
+  BALLS.push(Ball(0, 1.1, 0, (Math.random()-.5)*20, Math.random()*15+5, (Math.random()-.5)*20));
+  document.getElementById('sBalls').textContent = BALLS.length;
+}
+
+function kickBall() {
+  // Clear all balls, add one powerful kick toward goal
+  BALLS.forEach(function(b){ scene.remove(b.mesh); scene.remove(b.shadow); });
+  BALLS = [];
+  var power = 28 + Math.random()*12;
+  var angle = (Math.random()-.5)*.4;
+  BALLS.push(Ball(-30, 1.1, (Math.random()-.5)*10, power*Math.cos(angle), 10+Math.random()*6, power*Math.sin(angle)*.3));
+  document.getElementById('sBalls').textContent = 1;
+}
+
+function penaltyShot() {
+  BALLS.forEach(function(b){ scene.remove(b.mesh); scene.remove(b.shadow); });
+  BALLS = [];
+  var aim = (Math.random()-.5)*5;
+  BALLS.push(Ball(-11, 1.1, aim*.3, 32+Math.random()*8, 6+Math.random()*6, aim));
+  document.getElementById('sBalls').textContent = 1;
+}
+
+function cornerKick() {
+  BALLS.forEach(function(b){ scene.remove(b.mesh); scene.remove(b.shadow); });
+  BALLS = [];
+  BALLS.push(Ball(-48, 1.1, -32, 22+Math.random()*8, 14+Math.random()*5, 14+Math.random()*5));
+  document.getElementById('sBalls').textContent = 1;
+}
+
+function freekick() {
+  BALLS.forEach(function(b){ scene.remove(b.mesh); scene.remove(b.shadow); });
+  BALLS = [];
+  var curve = (Math.random()-.5)*8;
+  BALLS.push(Ball(-22, 1.1, curve*.5, 24+Math.random()*8, 8+Math.random()*5, curve));
+  document.getElementById('sBalls').textContent = 1;
+}
+
+function toggleWind() {
+  WIND.active = !WIND.active;
+  if (WIND.active) {
+    WIND.angle = Math.random()*Math.PI*2;
+    WIND.strength = 3+Math.random()*8;
+    WIND.x = Math.cos(WIND.angle)*WIND.strength;
+    WIND.z = Math.sin(WIND.angle)*WIND.strength;
+  }
+  document.getElementById('sWind').textContent = WIND.active ? Math.round(WIND.strength)+' m/s' : 'OFF';
+  document.getElementById('windArrow').style.transform = WIND.active ? 'rotate('+(WIND.angle*180/Math.PI)+'deg)' : '';
+  document.getElementById('windStrength').textContent = WIND.active ? 'Wind: '+Math.round(WIND.strength)+' m/s' : 'Wind: 0 m/s';
+}
+
+function toggleWave() {
+  WAVE.active = !WAVE.active;
+  var btn = document.getElementById('btnWave');
+  if(btn) btn.classList.toggle('active', WAVE.active);
+  document.getElementById('sWave').textContent = WAVE.active ? 'ON' : 'OFF';
+}
+
+function resetScene() {
+  BALLS.forEach(function(b){ scene.remove(b.mesh); scene.remove(b.shadow); });
+  BALLS = [];
+  GOALS = 0;
+  WIND.active = false; WAVE.active = false;
+  document.getElementById('sBalls').textContent = 0;
+  document.getElementById('sGoals').textContent = 0;
+  document.getElementById('sWind').textContent = 'OFF';
+  document.getElementById('sWave').textContent = 'OFF';
+  kickBall();
+}
+
+// ── PHYSICS UPDATE ─────────────────────────────────────────────
+var LAST_T = performance.now();
+
+function updatePhysics(dt) {
+  BALLS.forEach(function(ball) {
+    if (!ball.active) return;
+    // Apply gravity
+    ball.vy += GRAVITY * dt;
+    // Apply wind
+    if (WIND.active) { ball.vx += WIND.x * dt * .4; ball.vz += WIND.z * dt * .4; }
+    // Air resistance
+    var speed = Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy + ball.vz*ball.vz);
+    var drag = 0.015 * speed;
+    ball.vx *= (1-drag*dt); ball.vy *= (1-drag*dt); ball.vz *= (1-drag*dt);
+
+    // Move
+    ball.mesh.position.x += ball.vx * dt;
+    ball.mesh.position.y += ball.vy * dt;
+    ball.mesh.position.z += ball.vz * dt;
+
+    // Spin
+    ball.mesh.rotation.x += ball.spin;
+    ball.mesh.rotation.z += ball.spin*.7;
+
+    // Ground bounce
+    if (ball.mesh.position.y < 1.1) {
+      ball.mesh.position.y = 1.1;
+      ball.vy = Math.abs(ball.vy) * .55;
+      ball.vx *= .82; ball.vz *= .82;
+      if (Math.abs(ball.vy) < 0.8) ball.vy = 0;
+    }
+
+    // Wall bounds - soft
+    if (Math.abs(ball.mesh.position.x) > 60) { ball.vx *= -.7; ball.mesh.position.x = Math.sign(ball.mesh.position.x)*60; }
+    if (Math.abs(ball.mesh.position.z) > 40) { ball.vz *= -.7; ball.mesh.position.z = Math.sign(ball.mesh.position.z)*40; }
+
+    // Goal detection
+    if (ball.mesh.position.x > 50 && Math.abs(ball.mesh.position.z) < 3.66 && ball.mesh.position.y < 2.44 && ball.vx > 0) {
+      GOALS++; document.getElementById('sGoals').textContent = GOALS;
+      // Flash the goal post
+      goalR.children.forEach(function(c){ if(c.material) { c.material.emissive=new THREE.Color(0xffff00); setTimeout(function(){if(c.material)c.material.emissive=new THREE.Color(0);},500); } });
+    }
+    if (ball.mesh.position.x < -50 && Math.abs(ball.mesh.position.z) < 3.66 && ball.mesh.position.y < 2.44 && ball.vx < 0) {
+      GOALS++; document.getElementById('sGoals').textContent = GOALS;
+      goalL.children.forEach(function(c){ if(c.material) { c.material.emissive=new THREE.Color(0xffff00); setTimeout(function(){if(c.material)c.material.emissive=new THREE.Color(0);},500); } });
+    }
+
+    // Shadow
+    ball.shadow.position.x = ball.mesh.position.x;
+    ball.shadow.position.z = ball.mesh.position.z;
+    var shadowScale = Math.max(.3, 1 - ball.mesh.position.y/30);
+    ball.shadow.scale.set(shadowScale, shadowScale, shadowScale);
+    ball.shadow.material.opacity = shadowScale * .25;
+  });
+}
+
+// ── CROWD WAVE ─────────────────────────────────────────────────
+function updateWave(t) {
+  if (!WAVE.active) {
+    STAND_FANS.forEach(function(f){ f.position.y = f._baseY; });
+    return;
+  }
+  WAVE.time += 0.04;
+  STAND_FANS.forEach(function(f) {
+    var wave = Math.sin(WAVE.time + f._waveOffset) * 1.8;
+    f.position.y = f._baseY + Math.max(0, wave);
+  });
+}
+
+// ── CAMERA CONTROL ─────────────────────────────────────────────
+var CAM = { isDragging:false, isRight:false, prev:{x:0,y:0}, sph:{theta:.6,phi:1.0,r:130}, pan:{x:0,z:0} };
+
+document.getElementById('canvas3d').addEventListener('mousedown', function(e){
+  CAM.isDragging=true; CAM.isRight=e.button===2;
+  CAM.prev={x:e.clientX,y:e.clientY};
+});
+document.getElementById('canvas3d').addEventListener('contextmenu', function(e){e.preventDefault();});
+window.addEventListener('mouseup', function(){ CAM.isDragging=false; });
+window.addEventListener('mousemove', function(e){
+  if(!CAM.isDragging) return;
+  var dx=e.clientX-CAM.prev.x, dy=e.clientY-CAM.prev.y;
+  if(CAM.isRight){ CAM.pan.x-=dx*.15; CAM.pan.z-=dy*.15; }
+  else{ CAM.sph.theta-=dx*.007; CAM.sph.phi=Math.max(.15,Math.min(1.45,CAM.sph.phi+dy*.007)); }
+  CAM.prev={x:e.clientX,y:e.clientY};
+});
+document.getElementById('canvas3d').addEventListener('wheel', function(e){
+  CAM.sph.r=Math.max(40,Math.min(250,CAM.sph.r+e.deltaY*.25)); e.preventDefault();
+},{passive:false});
+// Touch
+var TOUCH_PREV=null;
+document.getElementById('canvas3d').addEventListener('touchstart',function(e){CAM.isDragging=true;var t=e.touches[0];CAM.prev={x:t.clientX,y:t.clientY};TOUCH_PREV=t;},{passive:true});
+document.getElementById('canvas3d').addEventListener('touchend',function(){CAM.isDragging=false;},{passive:true});
+document.getElementById('canvas3d').addEventListener('touchmove',function(e){
+  var t=e.touches[0];
+  var dx=t.clientX-CAM.prev.x,dy=t.clientY-CAM.prev.y;
+  CAM.sph.theta-=dx*.007;CAM.sph.phi=Math.max(.15,Math.min(1.45,CAM.sph.phi+dy*.007));
+  CAM.prev={x:t.clientX,y:t.clientY};
+},{passive:true});
+
+// ── ANIMATE ────────────────────────────────────────────────────
+var frameCount=0;
+function animate() {
+  requestAnimationFrame(animate);
+  var now = performance.now();
+  var dt = Math.min((now-LAST_T)/1000, .05);
+  LAST_T = now;
+
+  updatePhysics(dt);
+  updateWave(now);
+
+  // Update camera
+  camera.position.set(
+    CAM.sph.r*Math.sin(CAM.sph.phi)*Math.sin(CAM.sph.theta)+CAM.pan.x,
+    CAM.sph.r*Math.cos(CAM.sph.phi)+8,
+    CAM.sph.r*Math.sin(CAM.sph.phi)*Math.cos(CAM.sph.theta)+CAM.pan.z
+  );
+  camera.lookAt(CAM.pan.x,8,CAM.pan.z);
+
+  renderer.render(scene, camera);
+
+  // FPS
+  frameCount++;
+  if(now-FPS_LAST>500){
+    document.getElementById('sFps').textContent=Math.round(frameCount*1000/(now-FPS_LAST));
+    frameCount=0; FPS_LAST=now;
+  }
+}
+
+// Resize
+window.addEventListener('resize', function(){
+  W=window.innerWidth; H=window.innerHeight;
+  camera.aspect=W/H; camera.updateProjectionMatrix();
+  renderer.setSize(W,H);
+});
+
+// Start
+kickBall();
+animate();
+</script>
+</body>
+</html>

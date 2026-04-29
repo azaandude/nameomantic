@@ -385,6 +385,19 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.2);cursor:grabb
 .ud-item.danger{color:#fca5a5;}
 .ud-item.danger:hover{background:rgba(239,68,68,.1);}
 
+
+/* ── PLAYER CARDS ──────────────────────────────────────────── */
+@keyframes vcBar{0%,100%{height:6px;}50%{height:18px;}}
+.card-preview-wrap{display:flex;justify-content:center;padding:10px 0;}
+/* ── LEAGUE ────────────────────────────────────────────────── */
+.lg-team-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(6,255,165,.12);border:1px solid rgba(6,255,165,.25);border-radius:20px;padding:4px 10px;font-size:.74rem;font-weight:800;color:var(--a3);}
+.lg-team-tag button{background:none;border:none;cursor:pointer;color:var(--a3);font-size:.8rem;padding:0;line-height:1;}
+.lg-fixture{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:8px 12px;background:rgba(255,255,255,.04);border-radius:9px;margin-bottom:5px;font-size:.8rem;font-weight:700;}
+.lg-score{font-family:'Bangers',cursive;font-size:1.2rem;letter-spacing:2px;color:var(--a2);text-align:center;}
+/* ── CHALLENGE ─────────────────────────────────────────────── */
+.pred-entry{display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,255,255,.04);border-radius:9px;margin-bottom:6px;}
+.pred-points{font-family:'Bangers',cursive;font-size:1.1rem;color:var(--a2);min-width:36px;text-align:right;}
+
 </style>
 
 </head>
@@ -462,6 +475,10 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.2);cursor:grabb
   <div class="tab" id="tb-apimanager" onclick="switchTab('apimanager')" style="color:var(--a2)">🔑 API Keys</div>
   <div class="tab" id="tb-offside"    onclick="switchTab('offside')"    style="color:var(--danger)">📐 Offside</div>
   <div class="tab" id="tb-learncode"  onclick="switchTab('learncode')"  style="color:var(--a4)">🎓 Learn Code</div>
+  <div class="tab" id="tb-cards"     onclick="switchTab('cards')"     style="color:var(--a2)">🃏 Cards</div>
+  <div class="tab" id="tb-league"    onclick="switchTab('league')"    style="color:var(--a3)">🏅 League</div>
+  <div class="tab" id="tb-challenge" onclick="switchTab('challenge')" style="color:var(--a6)">⚔️ Challenge</div>
+  <div class="tab" id="tb-voice"     onclick="switchTab('voice')"     style="color:var(--a1)">🎙️ Voice</div>
   <div id="userBar" style="display:none">
     <div class="user-avatar" id="userAvatar">?</div>
     <div class="user-name" id="userNameLbl">User</div>
@@ -1296,7 +1313,7 @@ var TTS_PROVIDER='browser';var TTS_API_KEY='';var PREFS={confetti:true,animation
 var BC_INIT_DONE=false;var BC={theme:'sky',trophy:'🏆',speed:'.6s'};
 
 function switchTab(name){
-  ['names','places','football','worldcup','hub','predict','settings','broadcast','chat','roast','stadium','rumours','presser','totw','ticker','apimanager','offside','learncode'].forEach(function(x){
+  ['names','places','football','worldcup','hub','predict','settings','broadcast','chat','roast','stadium','rumours','presser','totw','ticker','apimanager','offside','learncode','cards','league','challenge','voice'].forEach(function(x){
     var tb=document.getElementById('tb-'+x);var pn=document.getElementById('pane-'+x);
     if(tb)tb.classList.toggle('active',x===name);if(pn)pn.classList.toggle('active',x===name);
   });
@@ -1314,7 +1331,21 @@ function showModal(){var el=document.getElementById('modalOv');if(el)el.classLis
 function hideModal(){var el=document.getElementById('modalOv');if(el)el.classList.remove('show');}
 function closeModalOv(e){if(e&&e.target===document.getElementById('modalOv'))hideModal();}
 
-function callClaude(prompt,sys){return fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:(lsGet('claude_model')||'claude-sonnet-4-5'),max_tokens:8000,system:sys||'You are a JSON API. RULES: 1) Output ONLY valid JSON 2) Never use markdown or backticks 3) Start response with { or [ 4) No explanation text before or after 5) Be concise but complete.',messages:[{role:'user',content:prompt}]})}).catch(function(e){throw new Error('Network error ('+e.message+')');}).then(function(r){return r.json();}).then(function(d){if(d.error)throw new Error('Claude: '+d.error.message);if(!d.content||!d.content[0])throw new Error('Claude returned empty response');return d.content[0].text;});}
+function callClaude(prompt,sys){
+  // Always use user's own saved API key if available
+  var userKey = lsGet('ai_key_claude') || lsGet('apm_claude_key') || '';
+  var headers = {'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'};
+  if (userKey) headers['x-api-key'] = userKey;
+  return fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:headers,
+    body:JSON.stringify({model:(lsGet('claude_model')||'claude-sonnet-4-5'),max_tokens:8000,
+    system:sys||'You are a JSON API. Output ONLY valid JSON. No markdown. Start with { or [.',
+    messages:[{role:'user',content:prompt}]})
+  }).catch(function(e){throw new Error('Network error ('+e.message+')');
+  }).then(function(r){return r.json();
+  }).then(function(d){if(d.error)throw new Error('Claude: '+d.error.message);
+    if(!d.content||!d.content[0])throw new Error('Empty response');
+    return d.content[0].text;});
+}
 function callGemini(prompt,sys){if(!AI_API_KEY)return Promise.reject(new Error('No Gemini API key — go to Settings to add one'));var gemModel=lsGet('gemini_model')||'gemini-1.5-flash';var url='https://generativelanguage.googleapis.com/v1beta/models/'+gemModel+':generateContent?key='+AI_API_KEY;var sysText=sys||'You MUST respond with ONLY raw JSON. No markdown. No backticks. No code fences.';return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({systemInstruction:{parts:[{text:sysText}]},contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:8000,temperature:0.9}})}).catch(function(e){throw new Error('Network error reaching Gemini ('+e.message+')');}).then(function(r){if(r.status===400||r.status===403)throw new Error('Gemini API key invalid — check Settings');if(r.status===429)throw new Error('Gemini quota exceeded (429)');return r.json();}).then(function(d){if(d.error)throw new Error('Gemini: '+(d.error.message||JSON.stringify(d.error)));var cand=d.candidates&&d.candidates[0];if(!cand)throw new Error('Gemini returned no candidates — prompt may have been blocked');var text=cand.content&&cand.content.parts&&cand.content.parts[0]?cand.content.parts[0].text:null;if(!text)throw new Error('Gemini returned empty text');return text;});}
 function callOpenAI(prompt,sys){if(!AI_API_KEY)return Promise.reject(new Error('No OpenAI API key — go to Settings to add one'));var sysText=sys||'You MUST respond with ONLY raw JSON. No markdown. No backticks. No code fences.';return fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+AI_API_KEY},body:JSON.stringify({model:(lsGet('openai_model')||'gpt-4o'),max_tokens:8000,messages:[{role:'system',content:sysText},{role:'user',content:prompt}]})}).catch(function(e){throw new Error('Network error reaching OpenAI ('+e.message+')');}).then(function(r){if(r.status===401)throw new Error('OpenAI API key invalid (401)');if(r.status===429)throw new Error('OpenAI rate limit exceeded (429)');return r.json();}).then(function(d){if(d.error)throw new Error('OpenAI: '+(d.error.message||JSON.stringify(d.error)));if(!d.choices||!d.choices[0])throw new Error('OpenAI returned no choices');return d.choices[0].message.content;});}
 function callAI(prompt,sys){if(AI_PROVIDER==='gemini'&&AI_API_KEY)return callGemini(prompt,sys);if(AI_PROVIDER==='openai'&&AI_API_KEY)return callOpenAI(prompt,sys);return callClaude(prompt,sys);}
@@ -3353,7 +3384,8 @@ function renderTicker(d){
 var AI_SAVER_MODE = false;
 
 var APM_KEYS = {
-  gemini:     { lsKey: 'ai_key_gemini',       aiKey: 'gemini' },
+  claude:     { lsKey: 'ai_key_claude',        aiKey: 'claude' },
+  gemini:     { lsKey: 'ai_key_gemini',        aiKey: 'gemini' },
   groq:       { lsKey: 'chat_key_groq',        aiKey: 'groq' },
   mistral:    { lsKey: 'chat_key_mistral',     aiKey: 'mistral' },
   cohere:     { lsKey: 'chat_key_cohere',      aiKey: 'cohere' },
@@ -4264,20 +4296,47 @@ function stad3dToggleRoof() {
   if (!STAD3D.scene||!window.THREE) return;
   var btn=document.getElementById('roofBtn');
   if (STAD3D.objects.roof) {
-    STAD3D.scene.remove(STAD3D.objects.roof);
+    STAD3D.objects.roof.forEach(function(obj){STAD3D.scene.remove(obj);});
     STAD3D.objects.roof=null;
     if(btn)btn.textContent='🏠 Roof';
   } else {
     var theme=STAD3D.currentTheme;
     var roofColor=theme==='cyberpunk'?0x001133:theme==='nature'?0x0a2010:theme==='minimalist'?0xe0e0e0:0x111122;
-    var geo=new THREE.PlaneGeometry(124,92);
-    var mat=new THREE.MeshLambertMaterial({color:roofColor,opacity:theme==='minimalist'?0.9:0.75,transparent:true,side:THREE.DoubleSide});
+    var roofMeshes=[];
+
+    // Main roof plane - translucent
+    var geo=new THREE.PlaneGeometry(126,94);
+    var mat=new THREE.MeshLambertMaterial({color:roofColor,opacity:theme==='minimalist'?0.88:0.72,transparent:true,side:THREE.DoubleSide});
     var roof=new THREE.Mesh(geo,mat);
-    roof.rotation.x=-Math.PI/2;roof.position.y=36;
-    STAD3D.scene.add(roof);STAD3D.objects.roof=roof;
-    if(btn)btn.textContent='🏠 Remove';
+    roof.rotation.x=-Math.PI/2; roof.position.y=36;
+    STAD3D.scene.add(roof); roofMeshes.push(roof);
+
+    // Roof edge trim
+    var edgeMat=new THREE.MeshLambertMaterial({color:theme==='cyberpunk'?0x00d4ff:0x888888});
+    [[126,2,0,36,-47],[126,2,0,36,47],[2,94,0,36,-63],[2,94,0,36,63]].forEach(function(p){
+      var eg=new THREE.BoxGeometry(p[0],p[1],p[2]||2);
+      var em=new THREE.Mesh(eg,edgeMat);
+      em.position.set(p[3]||0,36,p[4]||0);
+      STAD3D.scene.add(em); roofMeshes.push(em);
+    });
+
+    // Cantilever support struts (ring of pylons)
+    var strutMat=new THREE.MeshLambertMaterial({color:0x999999});
+    for(var si=0;si<16;si++){
+      var sa=si/16*Math.PI*2;
+      var sx=Math.cos(sa)*72, sz=Math.sin(sa)*52;
+      var strut=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.8,38,6),strutMat);
+      strut.position.set(sx,18,sz); STAD3D.scene.add(strut); roofMeshes.push(strut);
+      // Tension cable to roof edge
+      var pts=[new THREE.Vector3(sx,36,sz),new THREE.Vector3(sx*0.7,36,sz*0.7)];
+      var cGeo=new THREE.BufferGeometry().setFromPoints(pts);
+      var cable=new THREE.Line(cGeo,new THREE.LineBasicMaterial({color:0xcccccc,opacity:.5,transparent:true}));
+      STAD3D.scene.add(cable); roofMeshes.push(cable);
+    }
+
+    STAD3D.objects.roof=roofMeshes;
+    if(btn)btn.textContent='🏠 Remove Roof';
   }
-  updateCodeSnippet('stand');
 }
 
 function stad3dCrowd() {
@@ -4285,19 +4344,61 @@ function stad3dCrowd() {
   STAD3D.objects.crowd.forEach(function(p){STAD3D.scene.remove(p);});
   STAD3D.objects.crowd=[];
   var theme=STAD3D.currentTheme;
-  var homeColor=theme==='cyberpunk'?0x00f0ff:theme==='nature'?0x22c55e:theme==='futuristic'?0xa855f7:0xe8012c;
-  var awayColor=theme==='cyberpunk'?0xff00ff:theme==='minimalist'?0x333333:0x3b82f6;
-  for(var i=0;i<900;i++){
-    var angle=Math.random()*Math.PI*2;
-    var r=50+Math.random()*18;
-    var col=i<450?homeColor:awayColor;
-    var geo=new THREE.SphereGeometry(0.55,4,4);
-    var mat=new THREE.MeshLambertMaterial({color:col});
-    var p=new THREE.Mesh(geo,mat);
-    var stretch=angle<Math.PI?0.62:0.62;
-    p.position.set(Math.cos(angle)*r*0.87,4+Math.random()*18,Math.sin(angle)*r*stretch);
-    STAD3D.scene.add(p);STAD3D.objects.crowd.push(p);
-  }
+  var homeColor=theme==='cyberpunk'?0x00d4ff:theme==='nature'?0x22c55e:theme==='futuristic'?0xa855f7:0xe8012c;
+  var awayColor=theme==='cyberpunk'?0xff00ff:theme==='minimalist'?0x333333:0xffd23f;
+  var scarfColor=theme==='cyberpunk'?0x00ff88:0xffffff;
+
+  // Place fans in tiered rows around the bowl
+  var sections=[
+    {startAngle:0,    endAngle:Math.PI*0.45, rows:8, dist:54, color:homeColor},  // north lower
+    {startAngle:Math.PI*0.55,endAngle:Math.PI,rows:8, dist:54, color:awayColor}, // south lower
+    {startAngle:Math.PI,endAngle:Math.PI*1.45,rows:8, dist:54, color:homeColor}, // east lower
+    {startAngle:Math.PI*1.55,endAngle:Math.PI*2,rows:8,dist:54,color:homeColor}, // west lower
+    // Upper tier
+    {startAngle:0,    endAngle:Math.PI*2,     rows:5, dist:68, color:homeColor},
+  ];
+
+  sections.forEach(function(sec){
+    for(var row=0; row<sec.rows; row++){
+      var rowDist = sec.dist + row*2.2;
+      var rowH    = 4 + row*2.8;
+      var steps   = Math.floor(rowDist*0.8);
+      for(var s=0; s<steps; s++){
+        var angle = sec.startAngle + (sec.endAngle - sec.startAngle)*(s/steps);
+        // Fan head (sphere)
+        var headGeo = new THREE.SphereGeometry(0.55,4,4);
+        var col = (Math.random()>0.15) ? sec.color : scarfColor;
+        var headMat = new THREE.MeshLambertMaterial({color:col});
+        var head = new THREE.Mesh(headGeo,headMat);
+        head.position.set(
+          Math.cos(angle)*rowDist*0.87,
+          rowH + (Math.random()*0.5-0.25),
+          Math.sin(angle)*rowDist*0.62
+        );
+        STAD3D.scene.add(head);
+        STAD3D.objects.crowd.push(head);
+
+        // Body (cylinder)
+        var bodyGeo = new THREE.CylinderGeometry(0.3,0.35,0.9,5);
+        var bodyMat = new THREE.MeshLambertMaterial({color:sec.color});
+        var body = new THREE.Mesh(bodyGeo,bodyMat);
+        body.position.set(head.position.x, rowH-0.5, head.position.z);
+        STAD3D.scene.add(body);
+        STAD3D.objects.crowd.push(body);
+
+        // Occasional scarf/flag
+        if(Math.random()<0.12){
+          var flagGeo = new THREE.PlaneGeometry(1.2,0.5);
+          var flagMat = new THREE.MeshBasicMaterial({color:scarfColor,side:THREE.DoubleSide,opacity:.9,transparent:true});
+          var flag = new THREE.Mesh(flagGeo,flagMat);
+          flag.position.set(head.position.x, rowH+1.2, head.position.z);
+          flag.rotation.y = angle;
+          STAD3D.scene.add(flag);
+          STAD3D.objects.crowd.push(flag);
+        }
+      }
+    }
+  });
   STAD3D.crowdFilled=true;
 }
 
@@ -4416,7 +4517,8 @@ function stad3dFormation(key) {
 var AI_SAVER_MODE = false;
 
 var APM_KEYS = {
-  gemini:     { lsKey: 'ai_key_gemini',       aiKey: 'gemini' },
+  claude:     { lsKey: 'ai_key_claude',        aiKey: 'claude' },
+  gemini:     { lsKey: 'ai_key_gemini',        aiKey: 'gemini' },
   groq:       { lsKey: 'chat_key_groq',        aiKey: 'groq' },
   mistral:    { lsKey: 'chat_key_mistral',     aiKey: 'mistral' },
   cohere:     { lsKey: 'chat_key_cohere',      aiKey: 'cohere' },
@@ -5338,21 +5440,7 @@ function stad3dToggleRoof() {
   }
 }
 
-function stad3dCrowd() {
-  if (!STAD3D.scene || !window.THREE) return;
-  STAD3D.objects.crowd.forEach(function(c){STAD3D.scene.remove(c);});
-  STAD3D.objects.crowd = [];
-  var colors = [0xff3333,0x3366ff,0xffcc00,0x33cc33,0xff9900,0xffffff,0xff66cc];
-  for (var i=0; i<800; i++) {
-    var angle = Math.random()*Math.PI*2;
-    var r = 52 + Math.random()*16;
-    var geo = new THREE.SphereGeometry(0.6, 4, 4);
-    var mat = new THREE.MeshLambertMaterial({color:colors[Math.floor(Math.random()*colors.length)]});
-    var p = new THREE.Mesh(geo, mat);
-    p.position.set(Math.cos(angle)*r*(angle<Math.PI?1:0.85), 4+Math.random()*16, Math.sin(angle)*r*0.65);
-    STAD3D.scene.add(p); STAD3D.objects.crowd.push(p);
-  }
-}
+// old crowd fn removed
 
 function stad3dNight() {
   if (!window.THREE) return;
@@ -5366,6 +5454,630 @@ function stad3dNight() {
 function stad3dReset() {
   STAD3D.spherical = {theta:0.8, phi:1.1, radius:120};
 }
+
+
+// ════════════════════════════════════════════════════════════════
+// PLAYER CARD GENERATOR
+// ════════════════════════════════════════════════════════════════
+var CARD_THEMES = {
+  gold:    { bg1:'#c8a84b', bg2:'#7a5c1e', bg3:'#f0d060', text:'#fff8dc', badge:'#ffd700' },
+  silver:  { bg1:'#a8a8b8', bg2:'#606070', bg3:'#d0d0e0', text:'#f0f0ff', badge:'#c0c0c0' },
+  toty:    { bg1:'#0a0a2a', bg2:'#000010', bg3:'#4040ff', text:'#aaaaff', badge:'#8080ff' },
+  inform:  { bg1:'#c86400', bg2:'#7a3000', bg3:'#ff9020', text:'#fff0d0', badge:'#ff8000' },
+  hero:    { bg1:'#4a0060', bg2:'#200030', bg3:'#9900cc', text:'#f0d0ff', badge:'#cc00ff' },
+  icon:    { bg1:'#800000', bg2:'#400000', bg3:'#cc2020', text:'#ffe0e0', badge:'#ff4040' },
+  special: { bg1:'#004080', bg2:'#001840', bg3:'#0080ff', text:'#d0e8ff', badge:'#40a0ff' },
+  future:  { bg1:'#006040', bg2:'#003020', bg3:'#00c080', text:'#d0fff0', badge:'#00ff80' }
+};
+
+var RANDOM_PLAYERS = [
+  {name:'Kylian Mbappe',club:'PSG',nation:'France',pos:'LW',ovr:91,pac:97,sho:88,pas:80,dri:92,def:36,phy:76},
+  {name:'Erling Haaland',club:'Man City',nation:'Norway',pos:'ST',ovr:91,pac:88,sho:95,pas:65,dri:80,def:45,phy:88},
+  {name:'Vinicius Jr',club:'Real Madrid',nation:'Brazil',pos:'LW',ovr:92,pac:95,sho:86,pas:78,dri:94,def:28,phy:71},
+  {name:'Jude Bellingham',club:'Real Madrid',nation:'England',pos:'CM',ovr:88,pac:75,sho:82,pas:85,dri:87,def:70,phy:82},
+  {name:'Bukayo Saka',club:'Arsenal',nation:'England',pos:'RW',ovr:87,pac:82,sho:82,pas:80,dri:86,def:54,phy:68},
+  {name:'Pedri',club:'Barcelona',nation:'Spain',pos:'CM',ovr:88,pac:74,sho:76,pas:89,dri:90,def:72,phy:62},
+  {name:'Lamine Yamal',club:'Barcelona',nation:'Spain',pos:'RW',ovr:82,pac:90,sho:78,pas:76,dri:88,def:30,phy:55},
+];
+
+function liveUpdateCard() { drawCard(); }
+
+function drawCard() {
+  var canvas = document.getElementById('playerCardCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = 300, H = 420;
+  ctx.clearRect(0, 0, W, H);
+
+  var type = document.getElementById('cardType') ? document.getElementById('cardType').value : 'gold';
+  var theme = CARD_THEMES[type] || CARD_THEMES.gold;
+  var name = document.getElementById('cardName') ? document.getElementById('cardName').value || 'Player' : 'Player';
+  var club = document.getElementById('cardClub') ? document.getElementById('cardClub').value || 'Club' : 'Club';
+  var nation = document.getElementById('cardNation') ? document.getElementById('cardNation').value || '' : '';
+  var pos = document.getElementById('cardPos') ? document.getElementById('cardPos').value || 'ST' : 'ST';
+  var ovr = document.getElementById('cardOvr') ? parseInt(document.getElementById('cardOvr').value) || 91 : 91;
+  var stats = ['pac','sho','pas','dri','def','phy'].map(function(s){
+    var el = document.getElementById('s-'+s);
+    return el ? parseInt(el.value) : 80;
+  });
+
+  // Card background gradient
+  var grad = ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0, theme.bg1);
+  grad.addColorStop(0.5, theme.bg2);
+  grad.addColorStop(1, theme.bg1);
+  ctx.fillStyle = grad;
+  roundRect(ctx, 0, 0, W, H, 18);
+  ctx.fill();
+
+  // Sheen overlay
+  var sheen = ctx.createLinearGradient(0,0,W,H);
+  sheen.addColorStop(0,'rgba(255,255,255,0.18)');
+  sheen.addColorStop(0.5,'rgba(255,255,255,0)');
+  sheen.addColorStop(1,'rgba(0,0,0,0.2)');
+  ctx.fillStyle = sheen;
+  roundRect(ctx, 0, 0, W, H, 18);
+  ctx.fill();
+
+  // Accent line at top
+  var accentGrad = ctx.createLinearGradient(0,0,W,0);
+  accentGrad.addColorStop(0,'transparent');
+  accentGrad.addColorStop(0.5,theme.badge);
+  accentGrad.addColorStop(1,'transparent');
+  ctx.fillStyle = accentGrad;
+  ctx.fillRect(0, 0, W, 3);
+
+  // OVR rating - big
+  ctx.fillStyle = theme.text;
+  ctx.font = 'bold 52px Bangers, Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(ovr, 58, 82);
+
+  // Position below OVR
+  ctx.font = 'bold 16px Fredoka One, Arial';
+  ctx.fillStyle = theme.badge;
+  ctx.fillText(pos, 58, 102);
+
+  // Nation flag area (text)
+  ctx.font = '11px Arial';
+  ctx.fillStyle = theme.text;
+  ctx.fillText(nation.slice(0,3).toUpperCase(), 58, 122);
+
+  // Player silhouette circle
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.beginPath();
+  ctx.ellipse(195, 120, 85, 95, 0, 0, Math.PI*2);
+  ctx.fill();
+  // Simple player body silhouette
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.beginPath();
+  ctx.arc(195, 70, 28, 0, Math.PI*2); // head
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.beginPath();
+  ctx.ellipse(195, 145, 35, 50, 0, 0, Math.PI*2); // body
+  ctx.fill();
+
+  // Divider line
+  ctx.strokeStyle = theme.badge + '88';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(20, 210);
+  ctx.lineTo(W-20, 210);
+  ctx.stroke();
+
+  // Player name
+  ctx.fillStyle = theme.text;
+  ctx.font = 'bold 22px Bangers, Arial';
+  ctx.textAlign = 'center';
+  var displayName = name.toUpperCase();
+  if (displayName.length > 14) displayName = displayName.split(' ').pop();
+  ctx.fillText(displayName, W/2, 238);
+
+  // Club
+  ctx.font = '11px Arial';
+  ctx.fillStyle = theme.badge;
+  ctx.fillText(club.toUpperCase(), W/2, 256);
+
+  // Stats row
+  var statNames = ['PAC','SHO','PAS','DRI','DEF','PHY'];
+  var col1X = 50, col2X = 150, col3X = 250;
+  var xs = [col1X, col2X, col3X, col1X, col2X, col3X];
+  var ys = [290, 290, 290, 330, 330, 330];
+
+  for (var i = 0; i < 6; i++) {
+    var val = stats[i] || 75;
+    var statColor = val >= 85 ? '#00ff88' : val >= 70 ? '#ffd23f' : val >= 55 ? '#ff8800' : '#ff4444';
+    ctx.font = 'bold 18px Bangers, Arial';
+    ctx.fillStyle = statColor;
+    ctx.textAlign = 'center';
+    ctx.fillText(val, xs[i], ys[i]);
+    ctx.font = '9px Arial';
+    ctx.fillStyle = theme.text + 'aa';
+    ctx.fillText(statNames[i], xs[i], ys[i]+14);
+  }
+
+  // Stars (for high OVR)
+  if (ovr >= 85) {
+    var stars = ovr >= 95 ? 5 : ovr >= 90 ? 4 : 3;
+    ctx.font = '14px Arial';
+    ctx.fillStyle = theme.badge;
+    ctx.textAlign = 'center';
+    var starsStr = '★'.repeat(stars);
+    ctx.fillText(starsStr, W/2, 380);
+  }
+
+  // Card type badge
+  var typeLabels = {gold:'GOLD RARE',silver:'SILVER',toty:'TOTY',inform:'IN FORM',hero:'HERO',icon:'ICON',special:'SPECIAL',future:'FUTURE STARS'};
+  ctx.font = 'bold 9px Arial';
+  ctx.fillStyle = theme.badge;
+  ctx.textAlign = 'center';
+  ctx.fillText(typeLabels[type]||'', W/2, 400);
+
+  // Border
+  ctx.strokeStyle = theme.badge + 'cc';
+  ctx.lineWidth = 2;
+  roundRect(ctx, 1, 1, W-2, H-2, 17);
+  ctx.stroke();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.arcTo(x+w, y, x+w, y+r, r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+  ctx.lineTo(x+r, y+h);
+  ctx.arcTo(x, y+h, x, y+h-r, r);
+  ctx.lineTo(x, y+r);
+  ctx.arcTo(x, y, x+r, y, r);
+  ctx.closePath();
+}
+
+function randomCard() {
+  var p = RANDOM_PLAYERS[Math.floor(Math.random()*RANDOM_PLAYERS.length)];
+  var setV = function(id, v) { var el=document.getElementById(id); if(el) el.value=v; };
+  setV('cardName', p.name); setV('cardClub', p.club); setV('cardNation', p.nation);
+  setV('cardPos', p.pos); setV('cardOvr', p.ovr); setV('cardOvrVal', p.ovr);
+  setV('s-pac', p.pac); setV('s-sho', p.sho); setV('s-pas', p.pas);
+  setV('s-dri', p.dri); setV('s-def', p.def); setV('s-phy', p.phy);
+  drawCard();
+}
+
+function genCardWithAI() {
+  var name = document.getElementById('cardName').value || 'Haaland';
+  var pos  = document.getElementById('cardPos').value  || 'ST';
+  callAI('Generate realistic FIFA-style stats for footballer "'+name+'" playing '+pos+'. Return ONLY JSON: {"pac":88,"sho":92,"pas":68,"dri":82,"def":40,"phy":86,"ovr":90}')
+  .then(function(raw){
+    var d = parseJ(raw);
+    ['pac','sho','pas','dri','def','phy'].forEach(function(s){
+      var el=document.getElementById('s-'+s); if(el&&d[s]) el.value=d[s];
+    });
+    var ov=document.getElementById('cardOvr'); if(ov&&d.ovr) { ov.value=d.ovr; document.getElementById('cardOvrVal').textContent=d.ovr; }
+    drawCard();
+  }).catch(function(){ drawCard(); });
+}
+
+function downloadCard() {
+  var canvas = document.getElementById('playerCardCanvas');
+  if (!canvas) return;
+  var name = (document.getElementById('cardName').value||'player').replace(/\s+/g,'-').toLowerCase();
+  var a = document.createElement('a');
+  a.download = 'card-'+name+'.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+// ════════════════════════════════════════════════════════════════
+// MY LEAGUE
+// ════════════════════════════════════════════════════════════════
+var LG_TEAMS = [];
+
+function addLeagueTeam() {
+  var inp = document.getElementById('lgTeamInput');
+  var name = inp ? inp.value.trim() : '';
+  if (!name) return;
+  if (LG_TEAMS.indexOf(name) !== -1) { inp.value=''; return; }
+  LG_TEAMS.push(name);
+  inp.value = '';
+  renderTeamList();
+}
+
+function renderTeamList() {
+  var el = document.getElementById('lgTeamList');
+  if (!el) return;
+  el.innerHTML = '';
+  LG_TEAMS.forEach(function(t, i) {
+    var tag = document.createElement('div');
+    tag.className = 'lg-team-tag';
+    tag.innerHTML = '⚽ '+t+' <button onclick="removeTeam('+i+')" title="Remove">✕</button>';
+    el.appendChild(tag);
+  });
+}
+
+function removeTeam(i) {
+  LG_TEAMS.splice(i, 1);
+  renderTeamList();
+}
+
+function clearLeague() {
+  LG_TEAMS = [];
+  renderTeamList();
+  var out = document.getElementById('lgOut');
+  if (out) out.innerHTML = '';
+}
+
+function simMatch(a, b) {
+  var ga = Math.floor(Math.random()*4);
+  var gb = Math.floor(Math.random()*4);
+  return {home:a, away:b, ga:ga, gb:gb};
+}
+
+function runLeague() {
+  var err = document.getElementById('lgErr');
+  if (err) err.classList.remove('show');
+  if (LG_TEAMS.length < 2) {
+    if (err) { err.textContent='Add at least 2 teams!'; err.classList.add('show'); }
+    return;
+  }
+  var format = document.getElementById('lgFormat').value;
+  var name = document.getElementById('lgName').value || 'My League';
+
+  // Build table
+  var table = {};
+  LG_TEAMS.forEach(function(t) {
+    table[t] = {p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0};
+  });
+
+  // Generate fixtures (round robin)
+  var fixtures = [];
+  for (var i=0; i<LG_TEAMS.length; i++) {
+    for (var j=i+1; j<LG_TEAMS.length; j++) {
+      fixtures.push(simMatch(LG_TEAMS[i], LG_TEAMS[j]));
+    }
+  }
+
+  // Update table
+  fixtures.forEach(function(m) {
+    var h=table[m.home], a=table[m.away];
+    h.p++; a.p++;
+    h.gf+=m.ga; h.ga+=m.gb;
+    a.gf+=m.gb; a.ga+=m.ga;
+    if (m.ga>m.gb){ h.w++;h.pts+=3;a.l++; }
+    else if (m.ga<m.gb){ a.w++;a.pts+=3;h.l++; }
+    else { h.d++;a.d++;h.pts++;a.pts++; }
+  });
+
+  var sorted = LG_TEAMS.slice().sort(function(a,b){
+    return (table[b].pts - table[a].pts) || ((table[b].gf-table[b].ga)-(table[a].gf-table[a].ga));
+  });
+
+  // Render
+  var out = document.getElementById('lgOut');
+  if (!out) return;
+  var html = '<div class="card"><div style="font-family:Bangers,cursive;font-size:1.5rem;letter-spacing:3px;color:var(--a2);margin-bottom:4px">🏆 '+name+'</div>';
+  html += '<div style="font-size:.6rem;color:var(--muted);font-weight:800;letter-spacing:2px;margin-bottom:12px">FINAL STANDINGS · '+fixtures.length+' MATCHES</div>';
+  html += '<div style="overflow-x:auto"><table class="ltable"><thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead><tbody>';
+  sorted.forEach(function(t, i) {
+    var row = table[t];
+    var gd = row.gf-row.ga;
+    var cls = i===0?'cl':'';
+    html += '<tr class="'+cls+'"><td>'+(i+1)+'</td><td>'+t+'</td><td>'+row.p+'</td><td>'+row.w+'</td><td>'+row.d+'</td><td>'+row.l+'</td><td>'+row.gf+'</td><td>'+row.ga+'</td><td>'+(gd>0?'+':'')+gd+'</td><td class="pts-c">'+row.pts+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  html += '<div style="margin-top:12px;background:rgba(255,210,63,.1);border:1px solid rgba(255,210,63,.25);border-radius:10px;padding:12px;text-align:center"><div style="font-size:1.5rem">🏆</div><div style="font-family:Bangers,cursive;font-size:1.3rem;letter-spacing:2px;color:var(--a2)">'+sorted[0]+' are CHAMPIONS!</div></div>';
+
+  // Top scorers (random)
+  html += '<div style="font-size:.6rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--a3);margin:12px 0 8px">⚽ Top Scorers</div>';
+  var scorerNames = ['Martinez','Johnson','Silva','Brown','Taylor','Walker'];
+  for (var s=0; s<3; s++) {
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)"><span style="font-family:Bangers,cursive;color:var(--muted);min-width:20px">'+(s+1)+'</span><span style="font-weight:800;flex:1">'+scorerNames[s]+' <span style="color:var(--muted);font-size:.7rem">('+sorted[s]+')</span></span><span style="font-family:Bangers,cursive;color:var(--a2)">⚽'+(Math.floor(Math.random()*12)+8)+'</span></div>';
+  }
+  html += '</div>';
+
+  // Key fixtures
+  html += '<div class="card"><div class="slabel">🎯 Key Fixtures</div>';
+  var keyFix = fixtures.filter(function(m){return m.ga+m.gb>=4;}).slice(0,5);
+  if(!keyFix.length) keyFix = fixtures.slice(0,5);
+  keyFix.forEach(function(m){
+    html += '<div class="lg-fixture"><div style="text-align:right;font-weight:800">'+m.home+'</div><div class="lg-score">'+m.ga+' - '+m.gb+'</div><div style="font-weight:800">'+m.away+'</div></div>';
+  });
+  html += '</div>';
+
+  out.innerHTML = html;
+  launchConfetti();
+}
+
+// ════════════════════════════════════════════════════════════════
+// PREDICTION CHALLENGE
+// ════════════════════════════════════════════════════════════════
+var CURRENT_CHALLENGE = null;
+var CHALLENGE_PREDS = [];
+
+function submitChallenge() {
+  var home   = (document.getElementById('chlHome').value||'').trim();
+  var away   = (document.getElementById('chlAway').value||'').trim();
+  var hs     = parseInt(document.getElementById('chlHS').value)||0;
+  var as_    = parseInt(document.getElementById('chlAS').value)||0;
+  var scorer = (document.getElementById('chlScorer').value||'').trim();
+  var user   = (document.getElementById('chlUser').value||'You').trim();
+  if (!home || !away) { alert('Enter both team names!'); return; }
+
+  CURRENT_CHALLENGE = { home:home, away:away, hs:hs, as:as_, scorer:scorer };
+  CHALLENGE_PREDS = [{ user:user, hs:hs, as:as_, scorer:scorer, time:Date.now() }];
+
+  // Build shareable link with data encoded
+  var data = btoa(JSON.stringify(CURRENT_CHALLENGE));
+  var base = window.location.href.split('?')[0];
+  var link = base + '?challenge=' + data;
+
+  var linkEl = document.getElementById('chlLink');
+  if (linkEl) linkEl.textContent = link;
+
+  document.getElementById('chlActive').style.display = 'block';
+  renderLeaderboard();
+}
+
+function copyChallengeLink() {
+  var link = document.getElementById('chlLink');
+  if (!link) return;
+  try { navigator.clipboard.writeText(link.textContent); alert('Link copied! Share it with your friends.'); }
+  catch(e) { alert('Copy this link:\n' + link.textContent); }
+}
+
+function shareChallenge() {
+  var link = document.getElementById('chlLink');
+  if (!link) return;
+  var text = 'Predict the match: '+(CURRENT_CHALLENGE?CURRENT_CHALLENGE.home+' vs '+CURRENT_CHALLENGE.away:'')+'. I\'m backing '+CURRENT_CHALLENGE.hs+'-'+CURRENT_CHALLENGE.as_+'. Can you beat me?';
+  if (navigator.share) {
+    navigator.share({ title:'Predict the Match!', text:text, url:link.textContent }).catch(function(){});
+  } else { copyChallengeLink(); }
+}
+
+function revealResult() {
+  if (!CURRENT_CHALLENGE) return;
+  var home = CURRENT_CHALLENGE.home;
+  var away = CURRENT_CHALLENGE.away;
+  var hT = ALL_TEAMS.find(function(t){return t.n===home;})||{r:1700};
+  var aT = ALL_TEAMS.find(function(t){return t.n===away;})||{r:1700};
+  var diff = (hT.r - aT.r)/200;
+  var hg = Math.max(0, Math.round(Math.random()*3 + diff*0.5));
+  var ag = Math.max(0, Math.round(Math.random()*3 - diff*0.5));
+
+  CURRENT_CHALLENGE.actualHS = hg;
+  CURRENT_CHALLENGE.actualAS = ag;
+
+  // Score predictions
+  CHALLENGE_PREDS.forEach(function(p) {
+    var pts = 0;
+    if (p.hs===hg && p.as===ag) pts = 5; // exact score
+    else if ((p.hs>p.as && hg>ag)||(p.hs<p.as && hg<ag)||(p.hs===p.as && hg===ag)) pts = 2; // correct result
+    p.points = pts;
+  });
+
+  var resultEl = document.getElementById('chlResult');
+  if (resultEl) {
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = '<div class="slabel">🎲 AI Result</div>'
+      +'<div style="text-align:center;background:rgba(0,0,0,.3);border-radius:12px;padding:20px;margin-bottom:10px">'
+      +'<div style="font-family:Bangers,cursive;font-size:1.3rem;letter-spacing:3px;color:var(--a2);margin-bottom:4px">'+home+' vs '+away+'</div>'
+      +'<div style="font-family:Bangers,cursive;font-size:3rem;color:var(--a3);letter-spacing:8px">'+hg+' — '+ag+'</div>'
+      +'<div style="font-size:.7rem;color:var(--muted);font-weight:700;margin-top:4px">'+(hg>ag?home+' win':ag>hg?away+' win':'Draw')+'</div>'
+      +'</div>';
+  }
+  renderLeaderboard();
+  if (hg+ag >= 4) launchConfetti();
+}
+
+function renderLeaderboard() {
+  var el = document.getElementById('chlLeaderboard');
+  var content = document.getElementById('chlLbContent');
+  if (!el || !content) return;
+  el.style.display = 'block';
+  var sorted = CHALLENGE_PREDS.slice().sort(function(a,b){ return (b.points||0)-(a.points||0); });
+  var html = '';
+  sorted.forEach(function(p, i) {
+    var medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'👤';
+    html += '<div class="pred-entry">'
+      +'<span style="font-size:1.2rem">'+medal+'</span>'
+      +'<div style="flex:1"><div style="font-weight:800;font-size:.85rem">'+p.user+'</div>'
+      +'<div style="font-size:.68rem;color:var(--muted)">Predicted: '+p.hs+'-'+p.as+'</div></div>'
+      +'<div class="pred-points">'+(p.points!==undefined?p.points+'pts':'?')+'</div></div>';
+  });
+  content.innerHTML = html || '<div class="empty">No predictions yet</div>';
+}
+
+// Check URL for incoming challenge
+(function checkIncomingChallenge() {
+  var params = new URLSearchParams(window.location.search);
+  var data = params.get('challenge');
+  if (!data) return;
+  try {
+    var ch = JSON.parse(atob(data));
+    CURRENT_CHALLENGE = ch;
+    // Pre-fill form
+    var setV = function(id, v) { var el=document.getElementById(id); if(el) el.value=v; };
+    setV('chlHome', ch.home); setV('chlAway', ch.away);
+    setV('chlHS', ch.hs); setV('chlAS', ch.as);
+    setV('chlScorer', ch.scorer||'');
+    document.getElementById('chlActive').style.display = 'block';
+    var link = window.location.href;
+    var linkEl = document.getElementById('chlLink');
+    if (linkEl) linkEl.textContent = link;
+    alert('Friend challenge loaded! Change the score to YOUR prediction, then lock in.');
+  } catch(e) {}
+})();
+
+// ════════════════════════════════════════════════════════════════
+// VOICE COMMENTARY
+// ════════════════════════════════════════════════════════════════
+var VC_LINES = [];
+var VC_INDEX = 0;
+var VC_SPEAKING = false;
+
+function populateVCSelects() {
+  ['vcHome','vcAway'].forEach(function(id, i) {
+    var sel = document.getElementById(id);
+    if (!sel) return; sel.innerHTML = '';
+    ALL_TEAMS.sort(function(a,b){return b.r-a.r;}).forEach(function(t, idx) {
+      var o = document.createElement('option');
+      o.value = t.n; o.textContent = t.e+' '+t.n;
+      if (id==='vcHome'&&idx===0) o.selected=true;
+      if (id==='vcAway'&&idx===1) o.selected=true;
+      sel.appendChild(o);
+    });
+  });
+  // Populate voices
+  function fillVoices() {
+    var voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+    var sel = document.getElementById('vcVoice');
+    if (!sel) return;
+    sel.innerHTML = '';
+    voices.forEach(function(v, i) {
+      var o = document.createElement('option');
+      o.value = i; o.textContent = v.name + ' ('+v.lang+')';
+      sel.appendChild(o);
+    });
+    if (!voices.length) {
+      var o = document.createElement('option');
+      o.textContent = 'Default Browser Voice';
+      sel.appendChild(o);
+    }
+  }
+  fillVoices();
+  if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = fillVoices;
+}
+
+function genVoiceComm() {
+  var home  = document.getElementById('vcHome').value;
+  var away  = document.getElementById('vcAway').value;
+  var style = document.getElementById('vcStyle').value;
+  var extras = getExtras('vcExtras');
+  var err   = document.getElementById('vcErr');
+  if (err) err.classList.remove('show');
+  if (home===away) { if(err){err.textContent='Pick two different teams!';err.classList.add('show');}return; }
+
+  var extStr = extras.length ? 'Include: '+extras.join(', ')+'. ' : '';
+  var prompt = 'Generate '+style+' football commentary for '+home+' vs '+away+'. '+extStr+'Create 12 commentary lines covering key moments from kick-off to full time. Make it exciting and dramatic. Return ONLY JSON: {"homeScore":2,"awayScore":1,"lines":[{"min":"1","text":"Commentary line here","type":"normal"},{"min":"23","text":"GOAL! Commentary here","type":"goal"}],"motm":"Player name","summary":"One line match summary"}. Types: normal, goal, card, var, final';
+
+  var btn = document.getElementById('vcGenBtn');
+  if (btn) btn.disabled = true;
+  if (err) err.classList.remove('show');
+  document.getElementById('vcPlayerCard').style.display = 'none';
+  vcStop();
+
+  callAI(prompt).then(function(raw) {
+    var d = parseJ(raw);
+    if (!d.lines || !d.lines.length) throw new Error('No commentary generated');
+    VC_LINES = d.lines;
+    VC_INDEX = 0;
+
+    var title = document.getElementById('vcMatchTitle');
+    var score = document.getElementById('vcScoreDisplay');
+    var styleLabel = document.getElementById('vcStyleLabel');
+    if (title) title.textContent = home + ' vs ' + away;
+    if (score) score.textContent = (d.homeScore||0) + ' - ' + (d.awayScore||0);
+    if (styleLabel) styleLabel.textContent = style;
+
+    document.getElementById('vcPlayerCard').style.display = 'block';
+
+    // Render all lines
+    var allEl = document.getElementById('vcAllLines');
+    if (allEl) {
+      allEl.innerHTML = d.lines.map(function(l, i) {
+        var col = l.type==='goal'?'var(--a2)':l.type==='card'?'var(--danger)':l.type==='final'?'var(--a3)':'var(--text2)';
+        return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);animation:fadein .3s ease '+(i*.04)+'s both">'
+          +'<span style="font-family:Bangers,cursive;font-size:.82rem;color:var(--muted);min-width:30px">'+(l.min||'?')+"'</span>"
+          +'<span style="font-size:.78rem;font-weight:700;color:'+col+';flex:1">'+l.text+'</span></div>';
+      }).join('');
+    }
+
+    if (d.motm) {
+      allEl.innerHTML += '<div style="margin-top:8px;background:rgba(255,210,63,.1);border-radius:8px;padding:8px 12px;font-size:.76rem;font-weight:800;color:var(--a2)">⭐ MOTM: '+d.motm+' · '+d.summary+'</div>';
+    }
+
+    // Auto play
+    vcPlay();
+    if ((d.homeScore||0)+(d.awayScore||0) >= 4) launchConfetti();
+
+  }).catch(function(e) {
+    if (err) { err.textContent = e.message; err.classList.add('show'); }
+  }).finally(function() {
+    if (btn) btn.disabled = false;
+  });
+}
+
+function vcPlay() {
+  if (!VC_LINES.length) return;
+  VC_SPEAKING = true;
+  var stopBtn = document.getElementById('vcStopBtn');
+  var indicator = document.getElementById('vcPlayingIndicator');
+  if (stopBtn) stopBtn.style.display = '';
+  if (indicator) indicator.style.display = 'block';
+  vcSpeakNext();
+}
+
+function vcSpeakNext() {
+  if (!VC_SPEAKING || VC_INDEX >= VC_LINES.length) {
+    VC_SPEAKING = false;
+    var stopBtn = document.getElementById('vcStopBtn');
+    var indicator = document.getElementById('vcPlayingIndicator');
+    if (stopBtn) stopBtn.style.display = 'none';
+    if (indicator) indicator.style.display = 'none';
+    return;
+  }
+  var line = VC_LINES[VC_INDEX++];
+  var curEl = document.getElementById('vcCurrentLine');
+  if (curEl) {
+    curEl.textContent = (line.min ? line.min+"' — " : '') + line.text;
+    curEl.style.borderLeftColor = line.type==='goal'?'var(--a2)':line.type==='card'?'var(--danger)':'var(--a1)';
+  }
+  // Speak it
+  if (window.speechSynthesis) {
+    var utt = new SpeechSynthesisUtterance(line.text);
+    var voiceSel = document.getElementById('vcVoice');
+    var voices = window.speechSynthesis.getVoices();
+    if (voiceSel && voices.length) {
+      var idx = parseInt(voiceSel.value);
+      if (!isNaN(idx) && voices[idx]) utt.voice = voices[idx];
+    }
+    var rateSel = document.getElementById('vcRate');
+    utt.rate = rateSel ? parseFloat(rateSel.value)||1.0 : 1.0;
+    utt.pitch = line.type==='goal' ? 1.4 : 1.0;
+    utt.volume = 1.0;
+    utt.onend = vcSpeakNext;
+    utt.onerror = vcSpeakNext;
+    window.speechSynthesis.speak(utt);
+  } else {
+    setTimeout(vcSpeakNext, 1500);
+  }
+}
+
+function vcStop() {
+  VC_SPEAKING = false;
+  VC_INDEX = 0;
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  var stopBtn = document.getElementById('vcStopBtn');
+  var indicator = document.getElementById('vcPlayingIndicator');
+  if (stopBtn) stopBtn.style.display = 'none';
+  if (indicator) indicator.style.display = 'none';
+}
+
+function vcReplay() {
+  vcStop();
+  VC_INDEX = 0;
+  setTimeout(vcPlay, 300);
+}
+
+function vcExport() {
+  if (!VC_LINES.length) { alert('Generate commentary first!'); return; }
+  var script = VC_LINES.map(function(l){ return (l.min||'?')+"' — "+l.text; }).join('\n');
+  try { navigator.clipboard.writeText(script); alert('Commentary script copied!'); }
+  catch(e) { alert(script); }
+}
+
+
 
 // ════════════════════════════════════════════════════════════════
 // SETTINGS
@@ -7001,6 +7713,7 @@ window.addEventListener('load', function() {
       <button class="smBtn" onclick="stad3dTopView()" style="font-size:.66rem;background:rgba(59,130,246,.15);border-color:rgba(59,130,246,.3);color:var(--a5)">🦅 Hawk-Eye</button>
       <button class="smBtn" onclick="stad3dShowOffside()" id="offsideBtn" style="font-size:.66rem;background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:#fca5a5">📐 Offside Line</button>
       <button class="smBtn" onclick="stad3dReset()" style="font-size:.66rem">🔄 Reset</button>
+      <button class="smBtn" onclick="window.open('physics.html','_blank')" style="font-size:.66rem;background:rgba(6,255,165,.12);border-color:rgba(6,255,165,.3);color:var(--a3)">⚡ Physics Lab</button>
     </div>
     <!-- HAWK-EYE PiP -->
     <div id="hawkEyePip" style="display:none;position:absolute;top:10px;right:10px;width:160px;background:rgba(0,0,0,.9);border:1px solid var(--a5);border-radius:8px;overflow:hidden;z-index:20">
@@ -7221,6 +7934,23 @@ window.addEventListener('load', function() {
 <!-- KEYS GRID -->
 <div class="g2">
 
+<div class="card" style="border-color:rgba(255,107,53,.25);background:rgba(255,107,53,.04)">
+  <div class="slabel" style="color:var(--a1)">🟠 Anthropic Claude — YOUR Key</div>
+  <div style="font-size:.68rem;color:var(--muted);margin-bottom:8px;font-weight:700">
+    Use your own key so you never eat into the built-in session limits.<br>
+    <a href="https://console.anthropic.com" target="_blank" style="color:var(--a3)">→ Get key at console.anthropic.com</a>
+  </div>
+  <div style="position:relative;margin-bottom:7px">
+    <input id="apm-claude" type="password" placeholder="sk-ant-api03-..." class="bc-ctrl" oninput="apmSave('claude',this.value)">
+    <button onclick="apmToggle('apm-claude')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted)">👁️</button>
+  </div>
+  <div style="display:flex;gap:6px">
+    <button class="smBtn" onclick="apmTest('claude')" style="font-size:.7rem">🧪 Test</button>
+    <button class="smBtn danger" onclick="apmClear('claude')" style="font-size:.7rem">🗑️</button>
+    <span id="apm-claude-status" style="font-size:.65rem;color:var(--muted);font-weight:700;align-self:center"></span>
+  </div>
+</div>
+
 <div class="card">
   <div class="slabel">🔷 Google Gemini</div>
   <div style="font-size:.68rem;color:var(--muted);margin-bottom:8px;font-weight:700">Free · 1,500 requests/day · Best free option<br><a href="https://aistudio.google.com" target="_blank" style="color:var(--a5)">→ Get key at aistudio.google.com</a></div>
@@ -7421,6 +8151,252 @@ window.addEventListener('load', function() {
   <div id="learnBody" style="padding:16px 18px">
     <div class="empty"><span class="empty-icon">🎓</span>Pick a language and topic to start learning!</div>
   </div>
+</div>
+</div></div>
+
+
+<!-- ══ PLAYER CARDS ══════════════════════════════════════════════ -->
+<div class="pane" id="pane-cards"><div class="wrap" style="max-width:800px">
+<div class="sub-hdr"><div class="sub-logo">🃏 PLAYER CARD GENERATOR</div><div class="tagline">FIFA Ultimate Team Style · Custom Stats · Rare Editions · Download</div></div>
+<div class="card">
+  <div class="slabel">⚽ Card Details</div>
+  <div class="g3" style="margin-bottom:10px">
+    <div>
+      <div class="field-label">Player Name</div>
+      <input id="cardName" class="bc-ctrl" value="Erling Haaland" oninput="liveUpdateCard()">
+    </div>
+    <div>
+      <div class="field-label">Club</div>
+      <input id="cardClub" class="bc-ctrl" value="Man City" oninput="liveUpdateCard()">
+    </div>
+    <div>
+      <div class="field-label">Nation</div>
+      <input id="cardNation" class="bc-ctrl" value="Norway" oninput="liveUpdateCard()">
+    </div>
+  </div>
+  <div class="g3" style="margin-bottom:10px">
+    <div>
+      <div class="field-label">Position</div>
+      <div class="sw"><select id="cardPos" class="bc-ctrl" onchange="liveUpdateCard()">
+        <option>ST</option><option>CF</option><option>LW</option><option>RW</option>
+        <option>CAM</option><option>CM</option><option>CDM</option>
+        <option>LB</option><option>RB</option><option>CB</option><option>GK</option>
+      </select></div>
+    </div>
+    <div>
+      <div class="field-label">Card Type</div>
+      <div class="sw"><select id="cardType" class="bc-ctrl" onchange="liveUpdateCard()">
+        <option value="gold">⭐ Gold Rare</option>
+        <option value="silver">🥈 Silver</option>
+        <option value="toty">👑 TOTY</option>
+        <option value="inform">🔥 In Form</option>
+        <option value="hero">🦸 Hero</option>
+        <option value="icon">👑 Icon</option>
+        <option value="special">💜 Special</option>
+        <option value="future">🚀 FUT Future Stars</option>
+      </select></div>
+    </div>
+    <div>
+      <div class="field-label">Overall Rating</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="range" id="cardOvr" min="50" max="99" value="91" oninput="document.getElementById('cardOvrVal').textContent=this.value;liveUpdateCard()" style="-webkit-appearance:none;flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.1);outline:none;cursor:pointer">
+        <span id="cardOvrVal" style="font-family:'Bangers',cursive;font-size:1.1rem;color:var(--a2);min-width:28px">91</span>
+      </div>
+    </div>
+  </div>
+  <div class="slabel" style="margin-top:4px">📊 Stats</div>
+  <div class="g3" style="margin-bottom:14px" id="cardStatsGrid">
+    <div><div class="field-label">PAC</div><input type="range" id="s-pac" min="1" max="99" value="88" oninput="liveUpdateCard()"></div>
+    <div><div class="field-label">SHO</div><input type="range" id="s-sho" min="1" max="99" value="95" oninput="liveUpdateCard()"></div>
+    <div><div class="field-label">PAS</div><input type="range" id="s-pas" min="1" max="99" value="65" oninput="liveUpdateCard()"></div>
+    <div><div class="field-label">DRI</div><input type="range" id="s-dri" min="1" max="99" value="80" oninput="liveUpdateCard()"></div>
+    <div><div class="field-label">DEF</div><input type="range" id="s-def" min="1" max="99" value="45" oninput="liveUpdateCard()"></div>
+    <div><div class="field-label">PHY</div><input type="range" id="s-phy" min="1" max="99" value="88" oninput="liveUpdateCard()"></div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="smBtn active" onclick="genCardWithAI()" style="font-size:.76rem">🤖 AI Fill Stats</button>
+    <button class="smBtn" onclick="randomCard()" style="font-size:.76rem">🎲 Random Player</button>
+    <button class="smBtn" onclick="downloadCard()" style="font-size:.76rem">📥 Download Card</button>
+  </div>
+</div>
+<!-- CARD PREVIEW -->
+<div style="display:flex;justify-content:center;margin-top:6px">
+  <canvas id="playerCardCanvas" width="300" height="420" style="border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.6);max-width:100%"></canvas>
+</div>
+</div></div>
+
+<!-- ══ MY LEAGUE ══════════════════════════════════════════════════ -->
+<div class="pane" id="pane-league"><div class="wrap" style="max-width:820px">
+<div class="sub-hdr"><div class="sub-logo">🏅 MY LEAGUE</div><div class="tagline">Create · Invite Friends · Simulate Matches · Crown the Champion</div></div>
+<div class="card">
+  <div class="slabel">🏆 League Setup</div>
+  <div class="g2" style="margin-bottom:10px">
+    <div>
+      <div class="field-label">League Name</div>
+      <input id="lgName" class="bc-ctrl" value="Azaan Premier League" placeholder="Your league name...">
+    </div>
+    <div>
+      <div class="field-label">Format</div>
+      <div class="sw"><select id="lgFormat" class="bc-ctrl">
+        <option value="roundrobin">🔄 Round Robin (everyone plays everyone)</option>
+        <option value="groups">👥 Groups + Knockout</option>
+        <option value="knockout">⚡ Pure Knockout</option>
+      </select></div>
+    </div>
+  </div>
+  <div class="slabel">👥 Add Teams</div>
+  <div style="display:flex;gap:7px;margin-bottom:10px">
+    <input id="lgTeamInput" class="bc-ctrl" style="flex:1" placeholder="Team name e.g. Azaan FC..." onkeydown="if(event.key==='Enter')addLeagueTeam()">
+    <button class="smBtn active" onclick="addLeagueTeam()" style="font-size:.76rem;flex-shrink:0">➕ Add</button>
+  </div>
+  <div id="lgTeamList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;min-height:36px"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="bigbtn btn-a3" id="lgSimBtn" onclick="runLeague()" style="flex:1;font-size:1.2rem">🏅 SIMULATE LEAGUE 🏅</button>
+    <button class="smBtn danger" onclick="clearLeague()" style="font-size:.76rem;flex-shrink:0">🗑️ Reset</button>
+  </div>
+</div>
+<div class="err-box" id="lgErr"></div>
+<div id="lgOut"></div>
+</div></div>
+
+<!-- ══ CHALLENGE ══════════════════════════════════════════════════ -->
+<div class="pane" id="pane-challenge"><div class="wrap" style="max-width:780px">
+<div class="sub-hdr"><div class="sub-logo">⚔️ PREDICTION CHALLENGE</div><div class="tagline">Predict Matches · Score Points · Share Links · Beat Your Friends</div></div>
+<div class="card">
+  <div class="slabel">⚽ Your Prediction</div>
+  <div class="g2" style="margin-bottom:10px">
+    <div>
+      <div class="field-label">Home Team</div>
+      <input id="chlHome" class="bc-ctrl" value="Arsenal" placeholder="Home team...">
+    </div>
+    <div>
+      <div class="field-label">Away Team</div>
+      <input id="chlAway" class="bc-ctrl" value="Man City" placeholder="Away team...">
+    </div>
+  </div>
+  <div class="g3" style="margin-bottom:10px">
+    <div>
+      <div class="field-label">Your Predicted Score</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="chlHS" min="0" max="20" value="2" class="bc-ctrl" style="width:60px;text-align:center;font-family:'Bangers',cursive;font-size:1.2rem">
+        <span style="font-family:'Bangers',cursive;font-size:1.4rem;color:var(--muted)">-</span>
+        <input type="number" id="chlAS" min="0" max="20" value="1" class="bc-ctrl" style="width:60px;text-align:center;font-family:'Bangers',cursive;font-size:1.2rem">
+      </div>
+    </div>
+    <div>
+      <div class="field-label">First Goalscorer</div>
+      <input id="chlScorer" class="bc-ctrl" value="Saka" placeholder="Player name...">
+    </div>
+    <div>
+      <div class="field-label">Your Name</div>
+      <input id="chlUser" class="bc-ctrl" placeholder="e.g. Azaan" id="chlUserName">
+    </div>
+  </div>
+  <div style="display:flex;gap:7px;flex-wrap:wrap">
+    <button class="bigbtn btn-a6" onclick="submitChallenge()" style="flex:1;font-size:1.2rem">⚔️ LOCK IN PREDICTION ⚔️</button>
+  </div>
+</div>
+<div id="chlActive" style="display:none">
+  <div class="card" style="background:rgba(236,72,153,.07);border-color:rgba(236,72,153,.25)">
+    <div class="slabel" style="color:var(--a6)">🔗 Challenge Link</div>
+    <div style="font-size:.78rem;color:var(--text2);font-weight:700;margin-bottom:8px;line-height:1.6">Share this link with friends — they click it and submit their own prediction. Highest score wins!</div>
+    <div style="background:rgba(0,0,0,.4);border-radius:8px;padding:10px 13px;font-family:'Courier New',monospace;font-size:.72rem;color:var(--a3);word-break:break-all;margin-bottom:10px" id="chlLink"></div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="smBtn active" onclick="copyChallengeLink()" style="font-size:.76rem">📋 Copy Link</button>
+      <button class="smBtn" onclick="shareChallenge()" style="font-size:.76rem">📤 Share</button>
+      <button class="smBtn" onclick="revealResult()" style="font-size:.76rem;background:rgba(255,210,63,.12);border-color:rgba(255,210,63,.3);color:var(--a2)">🎲 Reveal AI Result</button>
+    </div>
+  </div>
+  <div id="chlLeaderboard" class="card" style="display:none">
+    <div class="slabel">🏆 Leaderboard</div>
+    <div id="chlLbContent"></div>
+  </div>
+  <div id="chlResult" class="card" style="display:none"></div>
+</div>
+<div id="chlPredictions" class="card" style="display:none">
+  <div class="slabel">📋 All Predictions Received</div>
+  <div id="chlPredList"></div>
+</div>
+</div></div>
+
+<!-- ══ VOICE COMMENTARY ═══════════════════════════════════════════ -->
+<div class="pane" id="pane-voice"><div class="wrap" style="max-width:760px">
+<div class="sub-hdr"><div class="sub-logo">🎙️ VOICE COMMENTARY</div><div class="tagline">AI Match · Real Voices · Drama · Sounds Like Sky Sports</div></div>
+<div class="card">
+  <div class="slabel">🎙️ Commentary Setup</div>
+  <div class="g2" style="margin-bottom:10px">
+    <div>
+      <div class="field-label">Home Team</div>
+      <div class="sw"><select id="vcHome" class="bc-ctrl"></select></div>
+    </div>
+    <div>
+      <div class="field-label">Away Team</div>
+      <div class="sw"><select id="vcAway" class="bc-ctrl"></select></div>
+    </div>
+  </div>
+  <div class="g3" style="margin-bottom:10px">
+    <div>
+      <div class="field-label">Commentary Style</div>
+      <div class="sw"><select id="vcStyle" class="bc-ctrl">
+        <option value="dramatic British Sky Sports">🎙️ Sky Sports British</option>
+        <option value="calm BBC Radio 5 Live">📻 BBC Radio 5</option>
+        <option value="excited American ESPN">🇺🇸 ESPN American</option>
+        <option value="passionate Spanish Marca">🇪🇸 Spanish Passion</option>
+        <option value="comedic and sarcastic">😂 Comedic</option>
+        <option value="Shakespearean dramatic">🎭 Shakespearean</option>
+      </select></div>
+    </div>
+    <div>
+      <div class="field-label">Voice</div>
+      <div class="sw"><select id="vcVoice" class="bc-ctrl"></select></div>
+    </div>
+    <div>
+      <div class="field-label">Speed</div>
+      <div class="sw"><select id="vcRate" class="bc-ctrl">
+        <option value="0.8">🐢 Slow</option>
+        <option value="1.0" selected>⚽ Normal</option>
+        <option value="1.2">⚡ Fast</option>
+        <option value="1.5">🚀 Very Fast</option>
+      </select></div>
+    </div>
+  </div>
+  <div class="field-label" style="margin-bottom:4px">🏟️ Crowd Atmosphere</div>
+  <div class="tog-grid" style="margin-bottom:12px" id="vcExtras">
+    <div class="tog on" data-val="dramatic" onclick="togExtra(this)"><div class="tog-box">✓</div><div class="tog-txt">🔥 Dramatic</div></div>
+    <div class="tog on" data-val="goals" onclick="togExtra(this)"><div class="tog-box">✓</div><div class="tog-txt">⚽ Goals</div></div>
+    <div class="tog" data-val="red_cards" onclick="togExtra(this)"><div class="tog-box"></div><div class="tog-txt">🟥 Red Cards</div></div>
+    <div class="tog" data-val="var_drama" onclick="togExtra(this)"><div class="tog-box"></div><div class="tog-txt">📺 VAR Drama</div></div>
+    <div class="tog" data-val="injury_time" onclick="togExtra(this)"><div class="tog-box"></div><div class="tog-txt">⏱️ Injury Time</div></div>
+  </div>
+  <button class="bigbtn btn-a1" id="vcGenBtn" onclick="genVoiceComm()"><span class="bico">🎙️</span> GENERATE & PLAY <span class="bico">🎙️</span></button>
+</div>
+<div class="err-box" id="vcErr"></div>
+<!-- PLAYER BAR -->
+<div class="card" id="vcPlayerCard" style="display:none">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+    <div style="font-size:2rem" id="vcScoreDisplay">0 - 0</div>
+    <div style="flex:1">
+      <div style="font-family:'Bangers',cursive;font-size:1rem;letter-spacing:2px;color:var(--a2)" id="vcMatchTitle">Match</div>
+      <div style="font-size:.65rem;color:var(--muted);font-weight:700" id="vcStyleLabel"></div>
+    </div>
+    <div id="vcPlayingIndicator" style="display:none">
+      <div style="display:flex;gap:3px;align-items:flex-end;height:20px">
+        <div style="width:4px;background:var(--a3);border-radius:2px;animation:vcBar .8s ease-in-out infinite"></div>
+        <div style="width:4px;background:var(--a3);border-radius:2px;animation:vcBar .8s ease-in-out .15s infinite"></div>
+        <div style="width:4px;background:var(--a3);border-radius:2px;animation:vcBar .8s ease-in-out .3s infinite"></div>
+        <div style="width:4px;background:var(--a3);border-radius:2px;animation:vcBar .8s ease-in-out .45s infinite"></div>
+      </div>
+    </div>
+  </div>
+  <!-- Live line display -->
+  <div id="vcCurrentLine" style="background:rgba(0,0,0,.4);border-radius:10px;padding:14px 16px;font-size:.92rem;font-weight:700;line-height:1.8;color:var(--text);min-height:60px;margin-bottom:10px;border-left:3px solid var(--a1)"></div>
+  <div style="display:flex;gap:7px;flex-wrap:wrap">
+    <button class="smBtn active" id="vcStopBtn" onclick="vcStop()" style="font-size:.76rem;display:none">⏹ Stop</button>
+    <button class="smBtn" onclick="vcReplay()" style="font-size:.76rem">🔁 Replay</button>
+    <button class="smBtn" onclick="vcExport()" style="font-size:.76rem">📋 Copy Script</button>
+  </div>
+  <!-- All lines scrollable -->
+  <div id="vcAllLines" style="margin-top:10px;max-height:300px;overflow-y:auto"></div>
 </div>
 </div></div>
 
