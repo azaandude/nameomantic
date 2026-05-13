@@ -3,442 +3,470 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>NAME-O-MATIC 9000 — Sign In</title>
-<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<title>NAME-O-MATIC 9000 — Home</title>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
 <script src="firebase-config.js" defer></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{
-  background:#07070f;color:#eeeeff;font-family:'Nunito',sans-serif;
-  min-height:100vh;display:flex;align-items:center;justify-content:center;
-  padding:20px;overflow:hidden;
-}
-body::before{
-  content:'';position:fixed;inset:0;pointer-events:none;
-  background:
-    radial-gradient(ellipse 70% 60% at 15% 10%,rgba(168,85,247,.12),transparent 60%),
-    radial-gradient(ellipse 60% 50% at 85% 90%,rgba(6,255,165,.08),transparent 60%),
-    radial-gradient(ellipse 50% 40% at 50% 50%,rgba(255,107,53,.05),transparent 60%);
-}
-/* Floating background particles */
-.bg-ball{
-  position:fixed;border-radius:50%;pointer-events:none;
-  animation:bgFloat linear infinite;opacity:.06;
-}
-@keyframes bgFloat{
-  0%{transform:translateY(110vh) rotate(0deg);}
-  100%{transform:translateY(-20vh) rotate(720deg);}
-}
+:root{--bg:#07070f;--card:#0e0e1e;--border:rgba(255,255,255,.07);--text:#eeeeff;--muted:#55558a;--a1:#ff6b35;--a2:#ffd23f;--a3:#06ffa5;--a4:#a855f7;--a5:#3b82f6;--a6:#ec4899;}
+body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-height:100vh;overflow-x:hidden;}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px;}
 
-.card{
-  background:rgba(14,14,30,.95);border:1px solid rgba(255,255,255,.08);
-  border-radius:20px;padding:36px 32px;width:100%;max-width:420px;
-  box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.04);
-  position:relative;z-index:1;backdrop-filter:blur(20px);
-  animation:cardIn .4s cubic-bezier(.34,1.56,.64,1);
-}
-@keyframes cardIn{from{opacity:0;transform:translateY(30px) scale(.95);}to{opacity:1;transform:none;}}
+/* Ambient glow bg */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 70% 50% at 15% 10%,rgba(168,85,247,.1),transparent 55%),
+             radial-gradient(ellipse 60% 40% at 85% 80%,rgba(6,255,165,.07),transparent 55%),
+             radial-gradient(ellipse 50% 40% at 50% 50%,rgba(255,107,53,.04),transparent 55%);}
 
-.logo{
-  font-family:'Bangers',cursive;font-size:2.8rem;letter-spacing:5px;text-align:center;
-  background:linear-gradient(135deg,#ff6b35,#ffd23f,#06ffa5,#a855f7);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  filter:drop-shadow(0 0 20px rgba(255,107,53,.3));margin-bottom:4px;
-}
-.tagline{
-  font-family:'Fredoka One',cursive;font-size:.72rem;color:#ffd23f;
-  letter-spacing:3px;text-transform:uppercase;text-align:center;opacity:.7;margin-bottom:28px;
-}
+/* ── NAVBAR ───────────────────────────────── */
+nav{position:sticky;top:0;z-index:100;background:rgba(7,7,15,.95);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);height:56px;display:flex;align-items:center;padding:0 24px;gap:16px;}
+.nav-logo{font-family:'Bangers',cursive;font-size:1.6rem;letter-spacing:4px;background:linear-gradient(135deg,var(--a1),var(--a2),var(--a3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;cursor:pointer;flex-shrink:0;}
+.nav-search{flex:1;max-width:320px;position:relative;}
+.nav-search input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:7px 14px 7px 36px;color:var(--text);font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:700;outline:none;transition:all .2s;}
+.nav-search input:focus{border-color:var(--a4);background:rgba(168,85,247,.06);}
+.nav-search input::placeholder{color:var(--muted);}
+.nav-search::before{content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:.75rem;}
+.nav-links{display:flex;gap:4px;margin-left:8px;}
+.nav-link{font-family:'Fredoka One',cursive;font-size:.78rem;padding:6px 12px;border-radius:8px;cursor:pointer;color:var(--muted);transition:all .2s;text-decoration:none;border:1px solid transparent;}
+.nav-link:hover{color:var(--text);background:rgba(255,255,255,.05);}
+.nav-link.active{color:var(--a2);background:rgba(255,210,63,.08);border-color:rgba(255,210,63,.18);}
+.ml{margin-left:auto;}
+.nav-right{display:flex;align-items:center;gap:8px;}
+.notif-btn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9rem;position:relative;transition:all .2s;}
+.notif-btn:hover{background:rgba(255,255,255,.12);}
+.notif-dot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--a6);border:1px solid var(--bg);}
+#navUser{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 10px 4px 4px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid var(--border);transition:all .2s;}
+#navUser:hover{background:rgba(255,255,255,.1);}
+#userAvatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bangers',cursive;font-size:.85rem;background:linear-gradient(135deg,var(--a4),var(--a5));}
+#userName{font-size:.75rem;font-weight:800;color:var(--text);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sign-in-btn{font-family:'Fredoka One',cursive;font-size:.78rem;padding:7px 16px;border-radius:20px;background:linear-gradient(135deg,var(--a4),var(--a5));color:#fff;border:none;cursor:pointer;transition:all .2s;}
+.sign-in-btn:hover{transform:scale(1.04);filter:brightness(1.1);}
 
-/* Mode tabs */
-.mode-tabs{display:flex;background:rgba(255,255,255,.04);border-radius:10px;padding:4px;margin-bottom:24px;gap:4px;}
-.mode-tab{
-  flex:1;padding:8px;font-family:'Fredoka One',cursive;font-size:.82rem;
-  letter-spacing:1px;border:none;border-radius:7px;cursor:pointer;
-  background:transparent;color:#55558a;transition:all .2s ease;
-}
-.mode-tab.active{background:linear-gradient(135deg,#a855f7,#3b82f6);color:#fff;box-shadow:0 2px 8px rgba(168,85,247,.3);}
+/* ── HERO ─────────────────────────────────── */
+.hero{position:relative;z-index:1;text-align:center;padding:60px 24px 40px;}
+.hero-eyebrow{font-family:'Fredoka One',cursive;font-size:.72rem;letter-spacing:4px;text-transform:uppercase;color:var(--a3);margin-bottom:14px;opacity:.8;}
+.hero-title{font-family:'Bangers',cursive;font-size:clamp(3rem,10vw,7rem);letter-spacing:6px;line-height:.95;background:linear-gradient(135deg,var(--a1) 0%,var(--a2) 35%,var(--a3) 65%,var(--a4) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 40px rgba(255,107,53,.3));margin-bottom:16px;}
+.hero-sub{font-size:1.05rem;font-weight:700;color:var(--muted);max-width:520px;margin:0 auto 28px;line-height:1.7;}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.hero-btn{font-family:'Bangers',cursive;font-size:1.3rem;letter-spacing:3px;padding:13px 32px;border-radius:50px;border:none;cursor:pointer;transition:all .2s;}
+.hero-btn:hover{transform:translateY(-3px);}
+.hero-btn.primary{background:linear-gradient(135deg,var(--a1),var(--a2));color:#1a0800;box-shadow:0 8px 28px rgba(255,107,53,.4);}
+.hero-btn.secondary{background:rgba(255,255,255,.07);color:var(--text);border:1px solid rgba(255,255,255,.15);}
+.hero-stats{display:flex;gap:28px;justify-content:center;margin-top:32px;flex-wrap:wrap;}
+.hero-stat{text-align:center;}
+.hero-stat-val{font-family:'Bangers',cursive;font-size:1.8rem;letter-spacing:2px;color:var(--a2);}
+.hero-stat-lbl{font-size:.62rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
 
-.field-label{font-size:.58rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:#55558a;margin-bottom:5px;}
-.field{position:relative;margin-bottom:14px;}
-input{
-  width:100%;background:rgba(255,255,255,.05);color:#eeeeff;
-  border:1px solid rgba(255,255,255,.1);border-radius:9px;
-  padding:12px 14px;font-family:'Nunito',sans-serif;font-size:.88rem;
-  font-weight:700;outline:none;transition:all .2s ease;
-}
-input:focus{border-color:#a855f7;background:rgba(168,85,247,.07);box-shadow:0 0 0 3px rgba(168,85,247,.12);}
-input::placeholder{color:#55558a;font-weight:600;}
-.eye-btn{
-  position:absolute;right:12px;top:50%;transform:translateY(-50%);
-  background:none;border:none;cursor:pointer;color:#55558a;font-size:1rem;
-  transition:color .2s;
-}
-.eye-btn:hover{color:#ffd23f;}
+/* ── SECTION ──────────────────────────────── */
+section{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 24px 48px;}
+.section-head{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.section-title{font-family:'Bangers',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--text);}
+.section-see-all{font-family:'Fredoka One',cursive;font-size:.75rem;color:var(--a4);cursor:pointer;margin-left:auto;transition:color .2s;text-decoration:none;}
+.section-see-all:hover{color:var(--text);}
 
-.bigbtn{
-  width:100%;padding:13px;font-family:'Bangers',cursive;font-size:1.45rem;
-  letter-spacing:4px;border:none;border-radius:11px;cursor:pointer;
-  transition:all .2s ease;margin-top:4px;
-  background:linear-gradient(135deg,#a855f7,#3b82f6);color:#fff;
-  box-shadow:0 6px 20px rgba(168,85,247,.35);
-}
-.bigbtn:hover{transform:translateY(-2px);filter:brightness(1.1);}
-.bigbtn:active{transform:scale(.98);}
-.bigbtn:disabled{opacity:.45;cursor:not-allowed;transform:none;filter:none;}
+/* ── FEATURED BANNER ──────────────────────── */
+.featured{position:relative;z-index:1;max-width:1200px;margin:0 auto 32px;padding:0 24px;}
+.featured-card{background:linear-gradient(135deg,rgba(168,85,247,.2),rgba(59,130,246,.15),rgba(6,255,165,.1));border:1px solid rgba(168,85,247,.25);border-radius:20px;padding:32px 36px;display:flex;align-items:center;gap:28px;overflow:hidden;position:relative;}
+.featured-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.03),transparent);pointer-events:none;border-radius:inherit;}
+.featured-icon{font-size:5rem;flex-shrink:0;filter:drop-shadow(0 0 20px rgba(168,85,247,.5));}
+.featured-content{flex:1;}
+.featured-badge{font-size:.6rem;font-weight:900;letter-spacing:3px;text-transform:uppercase;color:var(--a4);background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);border-radius:20px;padding:3px 12px;display:inline-block;margin-bottom:10px;}
+.featured-title{font-family:'Bangers',cursive;font-size:2.2rem;letter-spacing:4px;color:var(--text);margin-bottom:8px;}
+.featured-desc{font-size:.84rem;font-weight:700;color:var(--muted);line-height:1.7;max-width:480px;}
+.featured-btn{font-family:'Bangers',cursive;font-size:1.1rem;letter-spacing:3px;padding:10px 28px;border-radius:50px;background:linear-gradient(135deg,var(--a4),var(--a5));color:#fff;border:none;cursor:pointer;margin-top:14px;transition:all .2s;display:inline-block;}
+.featured-btn:hover{transform:scale(1.04);}
 
-.err-box{
-  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
-  border-radius:9px;padding:9px 13px;font-size:.78rem;font-weight:700;
-  color:#fca5a5;margin-bottom:12px;display:none;
-}
-.err-box.show{display:block;}
-.ok-box{
-  background:rgba(6,255,165,.1);border:1px solid rgba(6,255,165,.3);
-  border-radius:9px;padding:9px 13px;font-size:.78rem;font-weight:700;
-  color:#06ffa5;margin-bottom:12px;display:none;
-}
-.ok-box.show{display:block;}
+/* ── GAME CARDS ───────────────────────────── */
+.games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;}
+.game-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .25s ease;position:relative;text-decoration:none;color:inherit;display:block;}
+.game-card:hover{transform:translateY(-5px);border-color:rgba(255,255,255,.18);box-shadow:0 12px 40px rgba(0,0,0,.4);}
+.game-thumb{height:130px;display:flex;align-items:center;justify-content:center;font-size:4rem;position:relative;overflow:hidden;}
+.game-thumb::before{content:'';position:absolute;inset:0;}
+.game-card-body{padding:11px 13px 13px;}
+.game-name{font-family:'Fredoka One',cursive;font-size:.92rem;color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.game-desc{font-size:.68rem;font-weight:700;color:var(--muted);line-height:1.5;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.game-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.game-tag{font-size:.55rem;font-weight:900;padding:2px 7px;border-radius:8px;letter-spacing:.5px;text-transform:uppercase;}
+.game-plays{font-size:.6rem;font-weight:800;color:var(--muted);margin-left:auto;}
+.game-badge{position:absolute;top:8px;right:8px;font-size:.52rem;font-weight:900;padding:2px 8px;border-radius:10px;letter-spacing:1px;text-transform:uppercase;}
+.badge-new{background:rgba(6,255,165,.25);color:var(--a3);}
+.badge-hot{background:rgba(255,107,53,.25);color:var(--a1);}
+.badge-updated{background:rgba(255,210,63,.2);color:var(--a2);}
 
-.divider{display:flex;align-items:center;gap:10px;margin:16px 0;}
-.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08);}
-.divider-txt{font-size:.65rem;color:#55558a;font-weight:800;letter-spacing:2px;}
+/* ── CHAT PREVIEW ─────────────────────────── */
+.chat-preview{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 18px;max-height:300px;overflow:hidden;position:relative;}
+.chat-preview::after{content:'';position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,var(--card));pointer-events:none;}
+.chat-msg{display:flex;gap:9px;margin-bottom:10px;align-items:flex-start;}
+.chat-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:900;font-family:'Bangers',cursive;flex-shrink:0;}
+.chat-content{}
+.chat-name{font-size:.7rem;font-weight:900;margin-bottom:2px;}
+.chat-text{font-size:.78rem;font-weight:600;color:var(--muted);line-height:1.5;}
+.chat-open-btn{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-family:'Fredoka One',cursive;font-size:.82rem;padding:8px 24px;border-radius:20px;background:linear-gradient(135deg,var(--a4),var(--a5));color:#fff;border:none;cursor:pointer;z-index:10;transition:all .2s;}
+.chat-open-btn:hover{transform:translateX(-50%) scale(1.05);}
 
-.google-btn{
-  width:100%;padding:11px;font-family:'Fredoka One',cursive;font-size:.88rem;
-  letter-spacing:1px;border:1px solid rgba(255,255,255,.12);border-radius:11px;
-  cursor:pointer;background:rgba(255,255,255,.04);color:#eeeeff;
-  display:flex;align-items:center;justify-content:center;gap:9px;
-  transition:all .2s ease;
-}
-.google-btn:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.2);}
-.google-btn:active{transform:scale(.98);}
+/* ── USER PROFILE CARD ────────────────────── */
+.profile-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center;}
+.profile-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--a4),var(--a5));display:flex;align-items:center;justify-content:center;font-family:'Bangers',cursive;font-size:2rem;margin:0 auto 12px;box-shadow:0 0 20px rgba(168,85,247,.3);}
+.profile-name{font-family:'Bangers',cursive;font-size:1.3rem;letter-spacing:2px;color:var(--text);margin-bottom:2px;}
+.profile-email{font-size:.65rem;font-weight:700;color:var(--muted);margin-bottom:12px;}
+.profile-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+.pstat{background:rgba(255,255,255,.04);border-radius:9px;padding:8px 5px;text-align:center;}
+.pstat-val{font-family:'Bangers',cursive;font-size:1.1rem;color:var(--a2);}
+.pstat-lbl{font-size:.54rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:1px;}
+.profile-btn{width:100%;padding:9px;font-family:'Fredoka One',cursive;font-size:.82rem;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid var(--border);color:var(--text);cursor:pointer;transition:all .2s;margin-top:4px;text-decoration:none;display:block;text-align:center;}
+.profile-btn:hover{background:rgba(255,255,255,.13);}
+.profile-btn.main{background:linear-gradient(135deg,var(--a4),var(--a5));color:#fff;border:none;margin-top:0;margin-bottom:6px;}
 
-.footer-links{text-align:center;margin-top:18px;}
-.link{
-  font-size:.74rem;font-weight:700;color:#55558a;cursor:pointer;
-  transition:color .2s;text-decoration:none;display:inline-block;padding:2px 4px;
-}
-.link:hover{color:#a855f7;}
+/* ── NEWS FEED ────────────────────────────── */
+.news-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:9px;display:flex;gap:12px;cursor:pointer;transition:all .2s;}
+.news-card:hover{border-color:rgba(255,255,255,.15);transform:translateX(3px);}
+.news-icon{font-size:1.8rem;flex-shrink:0;}
+.news-title{font-weight:900;font-size:.82rem;margin-bottom:3px;color:var(--text);}
+.news-body{font-size:.7rem;font-weight:700;color:var(--muted);line-height:1.5;}
+.news-time{font-size:.58rem;font-weight:800;color:var(--a4);margin-top:4px;}
 
-.spinner{
-  width:20px;height:20px;border:2px solid rgba(255,255,255,.3);
-  border-top-color:#fff;border-radius:50%;
-  animation:spin 1s linear infinite;display:inline-block;
-}
-@keyframes spin{to{transform:rotate(360deg);}}
+/* ── SIDEBAR LAYOUT ───────────────────────── */
+.two-col{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;}.featured-card{flex-direction:column;text-align:center;}.featured-icon{font-size:3rem;}.nav-links{display:none;}.games-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));}}
+@media(max-width:480px){.games-grid{grid-template-columns:1fr 1fr;}.hero-title{font-size:2.8rem;}.hero-btns{flex-direction:column;align-items:center;}}
 
-/* Password strength */
-.pw-strength{height:3px;border-radius:2px;margin-top:5px;transition:all .3s ease;background:rgba(255,255,255,.1);}
+/* ── ACTIVITY FEED ────────────────────────── */
+.activity-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,.03);border-radius:9px;margin-bottom:6px;font-size:.75rem;font-weight:700;}
+.activity-icon{font-size:1rem;flex-shrink:0;}
+.activity-text{flex:1;color:var(--muted);}
+.activity-time{font-size:.6rem;color:var(--muted);opacity:.6;}
 
-/* Terms */
-.terms{font-size:.65rem;color:#55558a;text-align:center;margin-top:14px;line-height:1.6;}
-.terms a{color:#a855f7;text-decoration:none;}
+/* ── FOOTER ───────────────────────────────── */
+footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:28px 24px;text-align:center;font-size:.72rem;font-weight:700;color:var(--muted);}
+footer a{color:var(--a4);text-decoration:none;margin:0 10px;}
+footer a:hover{text-decoration:underline;}
 
-@media(max-width:480px){.card{padding:24px 18px;}.logo{font-size:2.2rem;}}
+@keyframes fadein{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.fadein{animation:fadein .4s ease both;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.float{animation:float 3s ease-in-out infinite;}
 </style>
 </head>
 <body>
 
-<!-- Floating background balls -->
-<script>
-for(var i=0;i<8;i++){
-  var b=document.createElement('div');b.className='bg-ball';
-  var sz=Math.random()*60+20;
-  var cols=['#a855f7','#3b82f6','#06ffa5','#ff6b35','#ffd23f','#ec4899'];
-  b.style.cssText='width:'+sz+'px;height:'+sz+'px;left:'+Math.random()*100+'vw;background:'+cols[Math.floor(Math.random()*cols.length)]+';animation-duration:'+(Math.random()*20+15)+'s;animation-delay:-'+(Math.random()*20)+'s;';
-  document.body.appendChild(b);
-}
-</script>
-
-<div class="card">
-  <div class="logo">NAME-O-MATIC</div>
-  <div class="tagline">⚡ The Ultimate Football AI App ⚡</div>
-
-  <div class="mode-tabs">
-    <button class="mode-tab active" id="tab-signin" onclick="setMode('signin')">Sign In</button>
-    <button class="mode-tab" id="tab-signup" onclick="setMode('signup')">Create Account</button>
-    <button class="mode-tab" id="tab-reset" onclick="setMode('reset')">Reset PW</button>
+<!-- NAVBAR -->
+<nav>
+  <div class="nav-logo" onclick="window.location.href='home.html'">NOM-9000</div>
+  <div class="nav-search"><input type="text" placeholder="Search features..." id="searchInput" oninput="doSearch(this.value)"></div>
+  <div class="nav-links">
+    <a class="nav-link active" href="home.html">🏠 Home</a>
+    <a class="nav-link" href="app.html">⚡ App</a>
+    <a class="nav-link" href="community.html">💬 Community</a>
+    <a class="nav-link" href="physics.html">⚽ Practice Lab</a>
   </div>
-
-  <div class="err-box" id="errBox"></div>
-  <div class="ok-box" id="okBox"></div>
-
-  <!-- SIGN IN FORM -->
-  <div id="form-signin">
-    <div class="field-label">Email</div>
-    <div class="field">
-      <input id="si-email" type="email" placeholder="your@email.com" autocomplete="email">
+  <div class="ml nav-right">
+    <div class="notif-btn" id="notifBtn" onclick="toggleNotifs()">🔔<div class="notif-dot" id="notifDot"></div></div>
+    <div id="navUser" onclick="toggleUserMenu()" style="display:none">
+      <div id="userAvatar">?</div>
+      <span id="userName">User</span>
+      <span style="font-size:.7rem;color:var(--muted)">▾</span>
     </div>
-    <div class="field-label">Password</div>
-    <div class="field">
-      <input id="si-password" type="password" placeholder="Your password" autocomplete="current-password">
-      <button class="eye-btn" onclick="togglePw('si-password',this)">👁️</button>
-    </div>
-    <button class="bigbtn" id="si-btn" onclick="doSignIn()">⚡ SIGN IN ⚡</button>
-    <div class="divider"><span class="divider-txt">OR</span></div>
-    <button class="google-btn" onclick="doGoogleSignIn()">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.2 0 5.9 1.1 8.1 2.9l6-6A23.8 23.8 0 0024 0C14.8 0 6.9 5.3 2.9 13.1l7 5.4C11.7 12.8 17.4 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v8.7h12.4a10.5 10.5 0 01-4.6 6.9l7.2 5.6c4.2-3.9 6.6-9.6 7.1-16.6z"/><path fill="#FBBC05" d="M10 28.6a14.5 14.5 0 010-9.3l-7-5.4A24 24 0 000 24c0 3.9.9 7.5 2.9 10.7l7-5.4-.1.3z"/><path fill="#4285F4" d="M24 48c6.5 0 12-2.1 16-5.8l-7.2-5.6a14.8 14.8 0 01-8.8 2.9c-6.6 0-12.3-3.3-14.9-8.9l-7 5.4C6.9 42.7 14.8 48 24 48z"/></svg>
-      Continue with Google
-    </button>
+    <button class="sign-in-btn" id="signInBtn" onclick="window.location.href='index.html'">Sign In</button>
   </div>
+</nav>
 
-  <!-- SIGN UP FORM -->
-  <div id="form-signup" style="display:none">
-    <div class="field-label">Display Name</div>
-    <div class="field">
-      <input id="su-name" type="text" placeholder="e.g. Azaan" autocomplete="name" oninput="checkFormReady()">
-    </div>
-    <div class="field-label">Email</div>
-    <div class="field">
-      <input id="su-email" type="email" placeholder="your@email.com" autocomplete="email" oninput="checkFormReady()">
-    </div>
-    <div class="field-label">Password</div>
-    <div class="field">
-      <input id="su-password" type="password" placeholder="Min 8 characters" autocomplete="new-password" oninput="checkPwStrength(this.value);checkFormReady()">
-      <button class="eye-btn" onclick="togglePw('su-password',this)">👁️</button>
-    </div>
-    <div class="pw-strength" id="pwStrength"></div>
-    <div style="font-size:.6rem;color:#55558a;font-weight:700;margin-top:4px;margin-bottom:10px" id="pwHint">Enter a password</div>
-    <div class="field-label">Confirm Password</div>
-    <div class="field" style="margin-bottom:16px">
-      <input id="su-confirm" type="password" placeholder="Repeat password" autocomplete="new-password" oninput="checkFormReady()">
-      <button class="eye-btn" onclick="togglePw('su-confirm',this)">👁️</button>
-    </div>
-    <button class="bigbtn" id="su-btn" onclick="doSignUp()">🎉 CREATE ACCOUNT 🎉</button>
-    <div class="terms">By creating an account you agree to use this app responsibly.<br>Your keys are stored locally in your browser only.</div>
-    <div class="divider"><span class="divider-txt">OR</span></div>
-    <button class="google-btn" onclick="doGoogleSignIn()">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.2 0 5.9 1.1 8.1 2.9l6-6A23.8 23.8 0 0024 0C14.8 0 6.9 5.3 2.9 13.1l7 5.4C11.7 12.8 17.4 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v8.7h12.4a10.5 10.5 0 01-4.6 6.9l7.2 5.6c4.2-3.9 6.6-9.6 7.1-16.6z"/><path fill="#FBBC05" d="M10 28.6a14.5 14.5 0 010-9.3l-7-5.4A24 24 0 000 24c0 3.9.9 7.5 2.9 10.7l7-5.4-.1.3z"/><path fill="#4285F4" d="M24 48c6.5 0 12-2.1 16-5.8l-7.2-5.6a14.8 14.8 0 01-8.8 2.9c-6.6 0-12.3-3.3-14.9-8.9l-7 5.4C6.9 42.7 14.8 48 24 48z"/></svg>
-      Sign up with Google
-    </button>
+<!-- USER DROPDOWN -->
+<div id="userDropdown" style="display:none;position:fixed;top:62px;right:16px;z-index:200;background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:6px;min-width:190px;box-shadow:0 8px 32px rgba(0,0,0,.5);">
+  <div style="padding:10px 12px;border-bottom:1px solid var(--border);margin-bottom:4px;">
+    <div style="font-weight:900;font-size:.86rem;" id="ddName">User</div>
+    <div style="font-size:.62rem;color:var(--muted);font-weight:700;" id="ddEmail"></div>
   </div>
+  <a href="app.html" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:.78rem;font-weight:800;color:var(--muted);text-decoration:none;transition:all .15s;" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background=''">⚡ Open App</a>
+  <a href="community.html" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:.78rem;font-weight:800;color:var(--muted);text-decoration:none;transition:all .15s;" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background=''">💬 Community Chat</a>
+  <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:.78rem;font-weight:800;color:#fca5a5;cursor:pointer;transition:all .15s;" onclick="signOut()" onmouseover="this.style.background='rgba(239,68,68,.1)'" onmouseout="this.style.background=''">🚪 Sign Out</div>
+</div>
 
-  <!-- RESET FORM -->
-  <div id="form-reset" style="display:none">
-    <div style="font-size:.82rem;color:#aaaacc;font-weight:700;margin-bottom:14px;line-height:1.6">Enter your email and we will send you a password reset link.</div>
-    <div class="field-label">Email</div>
-    <div class="field">
-      <input id="r-email" type="email" placeholder="your@email.com" autocomplete="email">
-    </div>
-    <button class="bigbtn" id="r-btn" onclick="doReset()">📧 SEND RESET LINK 📧</button>
-  </div>
-
-  <div class="footer-links">
-    <span class="link" onclick="setMode('reset')" id="link-forgot" style="display:inline">Forgot password?</span>
-    <span style="color:rgba(255,255,255,.1);margin:0 8px">|</span>
-    <span class="link" onclick="setMode('signup')" id="link-create">Create account</span>
+<!-- NOTIFICATIONS PANEL -->
+<div id="notifPanel" style="display:none;position:fixed;top:62px;right:60px;z-index:200;background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px 14px;min-width:260px;box-shadow:0 8px 32px rgba(0,0,0,.5);">
+  <div style="font-family:'Bangers',cursive;font-size:.95rem;letter-spacing:2px;color:var(--a2);margin-bottom:10px;">🔔 NOTIFICATIONS</div>
+  <div id="notifList">
+    <div class="activity-item"><span class="activity-icon">🆕</span><span class="activity-text">Physics Lab is now live!</span><span class="activity-time">now</span></div>
+    <div class="activity-item"><span class="activity-icon">💬</span><span class="activity-text">Community chat launched</span><span class="activity-time">1h</span></div>
+    <div class="activity-item"><span class="activity-icon">⭐</span><span class="activity-text">Player Cards feature added</span><span class="activity-time">2h</span></div>
+    <div class="activity-item"><span class="activity-icon">🏟️</span><span class="activity-text">Stadium Builder upgraded</span><span class="activity-time">1d</span></div>
   </div>
 </div>
 
+<!-- HERO -->
+<div class="hero fadein">
+  <div class="hero-eyebrow">⚡ The Ultimate Football AI Platform</div>
+  <div class="hero-title float">NAME-O-MATIC<br>9000</div>
+  <div class="hero-sub">AI Names · Match Commentary · World Cup Sim · 3D Stadium · Practice Lab · Community Chat · and so much more</div>
+  <div class="hero-btns">
+    <button class="hero-btn primary" onclick="window.location.href='app.html'">⚡ PLAY NOW</button>
+    <button class="hero-btn secondary" onclick="window.location.href='community.html'">💬 Community</button>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="hero-stat-val">20+</div><div class="hero-stat-lbl">Features</div></div>
+    <div class="hero-stat"><div class="hero-stat-val">6</div><div class="hero-stat-lbl">AI Models</div></div>
+    <div class="hero-stat"><div class="hero-stat-val">32</div><div class="hero-stat-lbl">WC Teams</div></div>
+    <div class="hero-stat"><div class="hero-stat-val">∞</div><div class="hero-stat-lbl">Fun</div></div>
+  </div>
+</div>
+
+<!-- FEATURED BANNER -->
+<div class="featured fadein">
+  <div class="featured-card">
+    <div class="featured-icon">🏟️</div>
+    <div class="featured-content">
+      <div class="featured-badge">✨ FEATURED — NEW</div>
+      <div class="featured-title">3D PHYSICS PRACTICE LAB</div>
+      <div class="featured-desc">FC26-style football practice mode. Shoot, curl free kicks, take penalties — real physics, real drama. 6 drill modes, power bar, curve system and confetti goals.</div>
+      <button class="featured-btn" onclick="window.location.href='physics.html'">▶ Play Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<section class="fadein">
+  <div class="two-col">
+
+    <!-- LEFT: Games grid + news -->
+    <div>
+
+      <!-- Popular features -->
+      <div class="section-head">
+        <div class="section-title">⚡ Popular Features</div>
+        <a href="app.html" class="section-see-all">See all →</a>
+      </div>
+      <div class="games-grid" id="gamesGrid">
+        <!-- Injected by JS -->
+      </div>
+
+      <!-- Recently Updated -->
+      <div class="section-head" style="margin-top:36px">
+        <div class="section-title">🆕 Recently Updated</div>
+      </div>
+      <div class="games-grid" id="updatedGrid"></div>
+
+      <!-- Community Preview -->
+      <div class="section-head" style="margin-top:36px">
+        <div class="section-title">💬 Community Chat</div>
+        <a href="community.html" class="section-see-all">Open chat →</a>
+      </div>
+      <div class="chat-preview" id="chatPreview">
+        <div id="recentMsgs">
+          <div class="chat-msg"><div class="chat-av" style="background:linear-gradient(135deg,#ff6b35,#ffd23f)">AZ</div><div class="chat-content"><div class="chat-name" style="color:#ffd23f">Azaan</div><div class="chat-text">Just tried the Physics Lab — the free kick curve is 🔥🔥</div></div></div>
+          <div class="chat-msg"><div class="chat-av" style="background:linear-gradient(135deg,#06ffa5,#3b82f6)">CL</div><div class="chat-content"><div class="chat-name" style="color:#06ffa5">Claude</div><div class="chat-text">Hey everyone! Try Gemini API for free generations 🤖</div></div></div>
+          <div class="chat-msg"><div class="chat-av" style="background:linear-gradient(135deg,#a855f7,#ec4899)">FK</div><div class="chat-content"><div class="chat-name" style="color:#a855f7">FootballKing</div><div class="chat-text">World Cup sim is insane — Argentina won my tournament 🏆</div></div></div>
+          <div class="chat-msg"><div class="chat-av" style="background:linear-gradient(135deg,#ffd23f,#ff6b35)">ST</div><div class="chat-content"><div class="chat-name" style="color:#ffd23f">StatsNerd</div><div class="chat-text">The 3D stadium themes are 🔥 Cyberpunk Claude one is my fave</div></div></div>
+        </div>
+        <button class="chat-open-btn" onclick="window.location.href='community.html'">💬 Open Community Chat</button>
+      </div>
+
+      <!-- Whats New -->
+      <div class="section-head" style="margin-top:36px">
+        <div class="section-title">📰 What's New</div>
+      </div>
+      <div id="newsFeed">
+        <div class="news-card"><div class="news-icon">⚽</div><div><div class="news-title">Physics Practice Lab — FC26 Style!</div><div class="news-body">Real ball physics, 6 drill modes, power bar, curve, penalties and confetti goals.</div><div class="news-time">Just now</div></div></div>
+        <div class="news-card"><div class="news-icon">💬</div><div><div class="news-title">Community Chat is Live!</div><div class="news-body">6 channels — general, recommendations, football, predictions, AI tips and bug reports. Real-time with Firebase.</div><div class="news-time">Today</div></div></div>
+        <div class="news-card"><div class="news-icon">🃏</div><div><div class="news-title">Player Card Generator</div><div class="news-body">FIFA Ultimate Team style cards. Pick type, set stats, AI fill, download as PNG.</div><div class="news-time">Today</div></div></div>
+        <div class="news-card"><div class="news-icon">🏟️</div><div><div class="news-title">Stadium Builder Upgraded</div><div class="news-body">Tiered crowd fans with scarves, cantilever roof with struts, better shadows and lighting.</div><div class="news-time">Yesterday</div></div></div>
+        <div class="news-card"><div class="news-icon">🎓</div><div><div class="news-title">Learn Code Tutorials</div><div class="news-body">Full tutorials in JS, Python, HTML, Lua, C++, C# with copy buttons and real examples.</div><div class="news-time">2 days ago</div></div></div>
+      </div>
+
+    </div><!-- end left -->
+
+    <!-- RIGHT SIDEBAR -->
+    <div>
+
+      <!-- Profile card -->
+      <div class="profile-card fadein" id="profileCard" style="margin-bottom:16px">
+        <div class="profile-avatar" id="profileAvatar">?</div>
+        <div class="profile-name" id="profileName">Guest</div>
+        <div class="profile-email" id="profileEmail">Not signed in</div>
+        <div class="profile-stats">
+          <div class="pstat"><div class="pstat-val" id="ps-goals">0</div><div class="pstat-lbl">Goals</div></div>
+          <div class="pstat"><div class="pstat-val" id="ps-names">0</div><div class="pstat-lbl">Names</div></div>
+          <div class="pstat"><div class="pstat-val" id="ps-msgs">0</div><div class="pstat-lbl">Msgs</div></div>
+        </div>
+        <button class="profile-btn main" onclick="window.location.href='app.html'">⚡ Open App</button>
+        <a href="community.html" class="profile-btn">💬 Community Chat</a>
+        <a href="physics.html" class="profile-btn">⚽ Practice Lab</a>
+        <div id="signedOutMsg" style="margin-top:10px;text-align:center;font-size:.72rem;font-weight:700;color:var(--muted)">
+          <a href="index.html" style="color:var(--a4)">Sign in</a> for full access & cloud saves
+        </div>
+      </div>
+
+      <!-- Activity -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:14px;">
+        <div style="font-family:'Bangers',cursive;font-size:.95rem;letter-spacing:2px;color:var(--a3);margin-bottom:10px;">📡 LIVE ACTIVITY</div>
+        <div id="activityFeed">
+          <div class="activity-item"><span class="activity-icon">⚽</span><span class="activity-text">Someone scored in Practice Lab</span><span class="activity-time">1m</span></div>
+          <div class="activity-item"><span class="activity-icon">🏆</span><span class="activity-text">Argentina won World Cup sim</span><span class="activity-time">3m</span></div>
+          <div class="activity-item"><span class="activity-icon">🃏</span><span class="activity-text">Player card generated</span><span class="activity-time">5m</span></div>
+          <div class="activity-item"><span class="activity-icon">💬</span><span class="activity-text">New message in #general</span><span class="activity-time">8m</span></div>
+          <div class="activity-item"><span class="activity-icon">🌍</span><span class="activity-text">Place names generated</span><span class="activity-time">12m</span></div>
+        </div>
+      </div>
+
+      <!-- API key reminder -->
+      <div style="background:rgba(255,210,63,.07);border:1px solid rgba(255,210,63,.2);border-radius:14px;padding:14px 16px;">
+        <div style="font-family:'Bangers',cursive;font-size:.9rem;letter-spacing:2px;color:var(--a2);margin-bottom:7px;">🔑 FREE API KEYS</div>
+        <div style="font-size:.72rem;font-weight:700;color:var(--muted);line-height:1.7;margin-bottom:10px;">Unlock unlimited AI generation with free keys:</div>
+        <a href="https://aistudio.google.com" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(255,255,255,.04);border-radius:8px;font-size:.74rem;font-weight:800;color:var(--a3);text-decoration:none;margin-bottom:5px;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='rgba(255,255,255,.04)'">🔷 Gemini — Free 1500/day →</a>
+        <a href="https://groq.com" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(255,255,255,.04);border-radius:8px;font-size:.74rem;font-weight:800;color:var(--a1);text-decoration:none;margin-bottom:5px;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='rgba(255,255,255,.04)'">⚡ Groq — Free & Fast →</a>
+        <a href="app.html" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(255,255,255,.04);border-radius:8px;font-size:.74rem;font-weight:800;color:var(--muted);text-decoration:none;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='rgba(255,255,255,.04)'">🔑 Add keys in API Manager →</a>
+      </div>
+
+    </div><!-- end sidebar -->
+
+  </div>
+</section>
+
+<footer>
+  <div style="font-family:'Bangers',cursive;font-size:1.1rem;letter-spacing:3px;color:var(--a2);margin-bottom:8px;">NAME-O-MATIC 9000</div>
+  <div>
+    <a href="app.html">⚡ App</a>
+    <a href="community.html">💬 Community</a>
+    <a href="physics.html">⚽ Practice</a>
+    <a href="index.html">🔑 Sign In</a>
+  </div>
+  <div style="margin-top:8px;font-size:.62rem;">Built with ⚡ and ☕ · Powered by Claude AI · Firebase</div>
+</footer>
+
 <script>
-// ── INIT FIREBASE ───────────────────────────────────────────────
-var app, auth, db;
-function initFirebaseIndex(attempts) {
-  if (typeof firebase !== 'undefined' && typeof FIREBASE_CONFIG !== 'undefined') {
-    try {
-      app  = firebase.initializeApp(FIREBASE_CONFIG);
-      auth = firebase.auth();
-      db   = firebase.firestore();
-      // Check if already signed in
-      auth.onAuthStateChanged(function(user) {
-        if (user) goToApp(user);
-      });
-    } catch(e) {
-      console.warn('Firebase init error:', e.message);
-    }
-  } else if (attempts > 0) {
-    setTimeout(function(){ initFirebaseIndex(attempts-1); }, 200);
-  } else {
-    console.warn('Firebase not available after waiting');
-  }
+// ── GAME CARDS DATA ─────────────────────────
+var GAMES = [
+  {name:'3D Stadium Builder',desc:'Build iconic stadiums with real stands, roof and crowd',icon:'🏟️',color:'#06ffa5',bg:'rgba(6,255,165,.12)',tag:'3D',tagCol:'#06ffa5',badge:'new',plays:'2.4K',url:'app.html'},
+  {name:'World Cup Simulator',desc:'Simulate a full 32-team World Cup with real brackets',icon:'🏆',color:'#ffd23f',bg:'rgba(255,210,63,.12)',tag:'Football',tagCol:'#ffd23f',badge:'hot',plays:'8.1K',url:'app.html'},
+  {name:'Practice Lab',desc:'FC26-style football drills with real ball physics',icon:'⚽',color:'#ff6b35',bg:'rgba(255,107,53,.12)',tag:'Physics',tagCol:'#ff6b35',badge:'new',plays:'1.2K',url:'physics.html'},
+  {name:'AI Name Generator',desc:'40+ regions, 11 extras, funny meter, auto-speak',icon:'⚡',color:'#a855f7',bg:'rgba(168,85,247,.12)',tag:'AI',tagCol:'#a855f7',badge:'',plays:'15K',url:'app.html'},
+  {name:'Match Commentary',desc:'17 styles of live AI match commentary with TTS',icon:'🎙️',color:'#3b82f6',bg:'rgba(59,130,246,.12)',tag:'AI',tagCol:'#3b82f6',badge:'',plays:'6.3K',url:'app.html'},
+  {name:'Player Card Generator',desc:'FIFA Ultimate Team style cards — download as PNG',icon:'🃏',color:'#ec4899',bg:'rgba(236,72,153,.12)',tag:'Creative',tagCol:'#ec4899',badge:'new',plays:'900',url:'app.html'},
+  {name:'Community Chat',desc:'6 channels, real-time, reactions, recommendations',icon:'💬',color:'#06ffa5',bg:'rgba(6,255,165,.1)',tag:'Social',tagCol:'#06ffa5',badge:'new',plays:'420',url:'community.html'},
+  {name:'Match Predictor',desc:'AI win probabilities, predicted XI, bold picks',icon:'🔮',color:'#ffd23f',bg:'rgba(255,210,63,.1)',tag:'AI',tagCol:'#ffd23f',badge:'',plays:'4.2K',url:'app.html'},
+];
+
+var UPDATED = [
+  {name:'Place Generator',desc:'19 place types with dark secrets, weird laws, legends',icon:'🗺️',color:'#3b82f6',bg:'rgba(59,130,246,.1)',tag:'Creative',tagCol:'#3b82f6',badge:'updated',plays:'3.1K',url:'app.html'},
+  {name:'Career Mode',desc:'Full FM-style football manager career simulation',icon:'📋',color:'#ff6b35',bg:'rgba(255,107,53,.1)',tag:'Football',tagCol:'#ff6b35',badge:'updated',plays:'2.8K',url:'app.html'},
+  {name:'Broadcaster Hub',desc:'11 themes — Sky Sports, BBC, ESPN, TNT and more',icon:'📺',color:'#ec4899',bg:'rgba(236,72,153,.1)',tag:'Media',tagCol:'#ec4899',badge:'updated',plays:'1.9K',url:'app.html'},
+  {name:'Learn Code',desc:'Full tutorials in JS, Python, HTML, Lua, C++, C#',icon:'🎓',color:'#a855f7',bg:'rgba(168,85,247,.1)',tag:'Education',tagCol:'#a855f7',badge:'updated',plays:'760',url:'app.html'},
+];
+
+function renderCards(data, gridId) {
+  var grid = document.getElementById(gridId);
+  if (!grid) return;
+  grid.innerHTML = data.map(function(g) {
+    var badgeHtml = g.badge ? '<div class="game-badge badge-'+g.badge+'">'+g.badge.toUpperCase()+'</div>' : '';
+    return '<a href="'+g.url+'" class="game-card">'
+      + badgeHtml
+      + '<div class="game-thumb" style="background:'+g.bg+'"><span style="filter:drop-shadow(0 0 12px '+g.color+'88)">'+g.icon+'</span></div>'
+      + '<div class="game-card-body">'
+      + '<div class="game-name">'+g.name+'</div>'
+      + '<div class="game-desc">'+g.desc+'</div>'
+      + '<div class="game-meta"><span class="game-tag" style="background:'+g.color+'22;color:'+g.color+'">'+g.tag+'</span><span class="game-plays">▶ '+g.plays+'</span></div>'
+      + '</div></a>';
+  }).join('');
 }
-// Remove the old onAuthStateChanged call since it's now inside initFirebaseIndex
 
-// auth check handled in initFirebaseIndex
+renderCards(GAMES, 'gamesGrid');
+renderCards(UPDATED, 'updatedGrid');
 
-// ── UI HELPERS ──────────────────────────────────────────────────
-function setMode(mode) {
-  ['signin','signup','reset'].forEach(function(m) {
-    document.getElementById('form-'+m).style.display = m===mode?'':'none';
-    document.getElementById('tab-'+m).classList.toggle('active', m===mode);
+// ── SEARCH ──────────────────────────────────
+function doSearch(q) {
+  q = q.toLowerCase().trim();
+  if (!q) { renderCards(GAMES, 'gamesGrid'); return; }
+  var filtered = GAMES.concat(UPDATED).filter(function(g) {
+    return g.name.toLowerCase().indexOf(q) !== -1 || g.desc.toLowerCase().indexOf(q) !== -1 || g.tag.toLowerCase().indexOf(q) !== -1;
   });
-  clearMessages();
-  var lf = document.getElementById('link-forgot');
-  var lc = document.getElementById('link-create');
-  if(lf) lf.style.display = mode==='reset'?'none':'inline';
-  if(lc) lc.style.display = mode==='signup'?'none':'inline';
+  renderCards(filtered, 'gamesGrid');
 }
 
-function showErr(msg) {
-  var e=document.getElementById('errBox'); e.textContent=msg; e.classList.add('show');
-  document.getElementById('okBox').classList.remove('show');
+// ── USER MENU ───────────────────────────────
+function toggleUserMenu() {
+  var dd = document.getElementById('userDropdown');
+  dd.style.display = dd.style.display==='none' ? 'block' : 'none';
 }
-function showOk(msg) {
-  var o=document.getElementById('okBox'); o.textContent=msg; o.classList.add('show');
-  document.getElementById('errBox').classList.remove('show');
+function toggleNotifs() {
+  var panel = document.getElementById('notifPanel');
+  panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+  document.getElementById('notifDot').style.display = 'none';
 }
-function clearMessages() {
-  document.getElementById('errBox').classList.remove('show');
-  document.getElementById('okBox').classList.remove('show');
-}
-function setLoading(btnId, loading) {
-  var btn = document.getElementById(btnId);
-  if (!btn) return;
-  btn.disabled = loading;
-  if (loading) {
-    btn._text = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner"></span>';
-  } else {
-    btn.innerHTML = btn._text || btn.innerHTML;
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#navUser') && !e.target.closest('#userDropdown')) document.getElementById('userDropdown').style.display='none';
+  if (!e.target.closest('#notifBtn') && !e.target.closest('#notifPanel')) document.getElementById('notifPanel').style.display='none';
+});
+
+// ── FIREBASE AUTH ───────────────────────────
+function initHome(attempts) {
+  if (typeof firebase === 'undefined' || typeof FIREBASE_CONFIG === 'undefined') {
+    if (attempts > 0) setTimeout(function(){ initHome(attempts-1); }, 200);
+    return;
   }
-}
-function togglePw(id, btn) {
-  var inp = document.getElementById(id);
-  if (!inp) return;
-  inp.type = inp.type==='password' ? 'text' : 'password';
-  btn.textContent = inp.type==='password' ? '👁️' : '🙈';
-}
-
-// ── PASSWORD STRENGTH ───────────────────────────────────────────
-function checkPwStrength(pw) {
-  var bar = document.getElementById('pwStrength');
-  var hint = document.getElementById('pwHint');
-  if (!bar || !hint) return;
-  var score = 0;
-  if (pw.length >= 8) score++;
-  if (/[A-Z]/.test(pw)) score++;
-  if (/[0-9]/.test(pw)) score++;
-  if (/[^A-Za-z0-9]/.test(pw)) score++;
-  var cols  = ['','#ef4444','#f59e0b','#3b82f6','#06ffa5'];
-  var hints = ['','Too short','Weak — add numbers','Good — add symbols','Strong password!'];
-  bar.style.background = cols[score] || '#ef4444';
-  bar.style.width = (score * 25) + '%';
-  hint.textContent = hints[score] || '';
-  hint.style.color = cols[score] || '#55558a';
-}
-
-function checkFormReady() {
-  var name = (document.getElementById('su-name').value||'').trim();
-  var email = (document.getElementById('su-email').value||'').trim();
-  var pw = document.getElementById('su-password').value||'';
-  var conf = document.getElementById('su-confirm').value||'';
-  var btn = document.getElementById('su-btn');
-  if (btn) btn.disabled = !(name && email && pw.length>=8 && pw===conf);
+  try { firebase.initializeApp(FIREBASE_CONFIG); } catch(e) {}
+  firebase.auth().onAuthStateChanged(function(user) {
+    if (user) {
+      document.getElementById('navUser').style.display = 'flex';
+      document.getElementById('signInBtn').style.display = 'none';
+      var name = user.displayName || 'User';
+      var email = user.email || '';
+      document.getElementById('userName').textContent = name.split(' ')[0];
+      document.getElementById('userAvatar').textContent = name[0].toUpperCase();
+      document.getElementById('ddName').textContent = name;
+      document.getElementById('ddEmail').textContent = email;
+      document.getElementById('profileName').textContent = name;
+      document.getElementById('profileEmail').textContent = email;
+      document.getElementById('profileAvatar').textContent = name[0].toUpperCase();
+      document.getElementById('signedOutMsg').style.display = 'none';
+      // Try load stats from Firestore
+      try {
+        firebase.firestore().collection('users').doc(user.uid).get().then(function(doc) {
+          if (doc.exists) {
+            var d = doc.data();
+            if (d.goals) document.getElementById('ps-goals').textContent = d.goals;
+            if (d.namesGenerated) document.getElementById('ps-names').textContent = d.namesGenerated;
+            if (d.messages) document.getElementById('ps-msgs').textContent = d.messages;
+          }
+        });
+      } catch(e){}
+    } else {
+      document.getElementById('navUser').style.display = 'none';
+      document.getElementById('signInBtn').style.display = 'block';
+    }
+  });
 }
 
-// ── FIREBASE ERROR MESSAGES ─────────────────────────────────────
-function friendlyError(code) {
-  var messages = {
-    'auth/user-not-found':       'No account found with that email.',
-    'auth/wrong-password':       'Wrong password. Try again or reset it.',
-    'auth/email-already-in-use': 'That email is already registered. Sign in instead.',
-    'auth/weak-password':        'Password must be at least 6 characters.',
-    'auth/invalid-email':        'Please enter a valid email address.',
-    'auth/too-many-requests':    'Too many attempts. Wait a moment and try again.',
-    'auth/network-request-failed':'Network error. Check your connection.',
-    'auth/popup-closed-by-user': 'Sign-in window closed. Try again.',
-    'auth/cancelled-popup-request':'Sign-in cancelled.',
-    'auth/invalid-api-key':      'Firebase not configured yet. Fill in firebase-config.js first!',
-    'auth/invalid-credential':   'Email or password is incorrect.'
-  };
-  return messages[code] || 'Something went wrong. Try again.';
+function signOut() {
+  firebase.auth().signOut().then(function(){ window.location.reload(); }).catch(function(){});
 }
 
-// ── SIGN IN ─────────────────────────────────────────────────────
-function doSignIn() {
-  var email = (document.getElementById('si-email').value||'').trim();
-  var pw    = document.getElementById('si-password').value||'';
-  clearMessages();
-  if (!email || !pw) { showErr('Please fill in both fields.'); return; }
-  setLoading('si-btn', true);
-  auth.signInWithEmailAndPassword(email, pw)
-    .then(function(cred) { goToApp(cred.user); })
-    .catch(function(e)  { showErr(friendlyError(e.code)); setLoading('si-btn', false); });
+// Load recent community messages
+function loadRecentMsgs() {
+  if (typeof firebase === 'undefined') return;
+  try {
+    firebase.firestore().collection('chat_general')
+      .orderBy('ts','desc').limit(4).get()
+      .then(function(snap) {
+        if (snap.empty) return;
+        var cols = ['#ff6b35','#ffd23f','#06ffa5','#a855f7','#3b82f6'];
+        var html = snap.docs.reverse().map(function(d, i) {
+          var m = d.data();
+          var col = cols[i % cols.length];
+          var ini = (m.name||'U')[0].toUpperCase();
+          return '<div class="chat-msg"><div class="chat-av" style="background:linear-gradient(135deg,'+col+','+col+'88)">'+ini+'</div>'
+            +'<div class="chat-content"><div class="chat-name" style="color:'+col+'">'+(m.name||'User')+'</div>'
+            +'<div class="chat-text">'+(m.text||'').slice(0,80)+'</div></div></div>';
+        }).join('');
+        document.getElementById('recentMsgs').innerHTML = html;
+      }).catch(function(){});
+  } catch(e){}
 }
 
-// ── SIGN UP ─────────────────────────────────────────────────────
-function doSignUp() {
-  var name  = (document.getElementById('su-name').value||'').trim();
-  var email = (document.getElementById('su-email').value||'').trim();
-  var pw    = document.getElementById('su-password').value||'';
-  var conf  = document.getElementById('su-confirm').value||'';
-  clearMessages();
-  if (!name || !email || !pw) { showErr('Please fill in all fields.'); return; }
-  if (pw !== conf)            { showErr('Passwords do not match.'); return; }
-  if (pw.length < 8)          { showErr('Password must be at least 8 characters.'); return; }
-  setLoading('su-btn', true);
-  auth.createUserWithEmailAndPassword(email, pw)
-    .then(function(cred) {
-      return cred.user.updateProfile({ displayName: name })
-        .then(function() {
-          return db.collection('users').doc(cred.user.uid).set({
-            name: name, email: email,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            plan: 'free'
-          });
-        })
-        .then(function() { goToApp(cred.user); });
-    })
-    .catch(function(e) { showErr(friendlyError(e.code)); setLoading('su-btn', false); });
-}
-
-// ── GOOGLE SIGN IN ──────────────────────────────────────────────
-function doGoogleSignIn() {
-  clearMessages();
-  var provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider)
-    .then(function(cred) {
-      var user = cred.user;
-      return db.collection('users').doc(user.uid).set({
-        name: user.displayName || 'User',
-        email: user.email,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        plan: 'free'
-      }, { merge: true })
-      .then(function() { goToApp(user); });
-    })
-    .catch(function(e) { showErr(friendlyError(e.code)); });
-}
-
-// ── PASSWORD RESET ──────────────────────────────────────────────
-function doReset() {
-  var email = (document.getElementById('r-email').value||'').trim();
-  clearMessages();
-  if (!email) { showErr('Please enter your email.'); return; }
-  setLoading('r-btn', true);
-  auth.sendPasswordResetEmail(email)
-    .then(function() {
-      showOk('Reset email sent! Check your inbox (and spam folder).');
-      setLoading('r-btn', false);
-    })
-    .catch(function(e) { showErr(friendlyError(e.code)); setLoading('r-btn', false); });
-}
-
-// ── GO TO APP ───────────────────────────────────────────────────
-function goToApp(user) {
-  sessionStorage.setItem('nm_user', JSON.stringify({
-    uid:   user.uid,
-    name:  user.displayName || 'User',
-    email: user.email,
-    photo: user.photoURL || ''
-  }));
-  window.location.href = 'app.html';
-}
-
-// ── ENTER KEY SUPPORT ───────────────────────────────────────────
-document.addEventListener('keydown', function(e) {
-  if (e.key !== 'Enter') return;
-  var mode = document.getElementById('tab-signin').classList.contains('active') ? 'signin'
-           : document.getElementById('tab-signup').classList.contains('active') ? 'signup' : 'reset';
-  if (mode === 'signin') doSignIn();
-  else if (mode === 'signup') doSignUp();
-  else doReset();
+window.addEventListener('load', function() {
+  initHome(25);
+  setTimeout(loadRecentMsgs, 2000);
 });
 </script>
-<script>initFirebaseIndex(20);</script>
 </body>
 </html>

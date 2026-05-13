@@ -478,6 +478,7 @@ input[type=range]:active::-webkit-slider-thumb{transform:scale(1.2);cursor:grabb
   <div class="tab" id="tb-cards"     onclick="switchTab('cards')"     style="color:var(--a2)">🃏 Cards</div>
   <div class="tab" id="tb-league"    onclick="switchTab('league')"    style="color:var(--a3)">🏅 League</div>
   <div class="tab" id="tb-challenge" onclick="switchTab('challenge')" style="color:var(--a6)">⚔️ Challenge</div>
+  <div class="tab" id="tb-draft"     onclick="switchTab('draft')"     style="color:var(--a2)">🎴 FUT Draft</div>
   <div class="tab" id="tb-voice"     onclick="switchTab('voice')"     style="color:var(--a1)">🎙️ Voice</div>
   <div id="userBar" style="display:none">
     <div class="user-avatar" id="userAvatar">?</div>
@@ -1313,7 +1314,7 @@ var TTS_PROVIDER='browser';var TTS_API_KEY='';var PREFS={confetti:true,animation
 var BC_INIT_DONE=false;var BC={theme:'sky',trophy:'🏆',speed:'.6s'};
 
 function switchTab(name){
-  ['names','places','football','worldcup','hub','predict','settings','broadcast','chat','roast','stadium','rumours','presser','totw','ticker','apimanager','offside','learncode','cards','league','challenge','voice'].forEach(function(x){
+  ['names','places','football','worldcup','hub','predict','settings','broadcast','chat','roast','stadium','rumours','presser','totw','ticker','apimanager','offside','learncode','cards','league','challenge','voice','draft'].forEach(function(x){
     var tb=document.getElementById('tb-'+x);var pn=document.getElementById('pane-'+x);
     if(tb)tb.classList.toggle('active',x===name);if(pn)pn.classList.toggle('active',x===name);
   });
@@ -7204,7 +7205,7 @@ function initFirebase() {
       var overlay = document.getElementById('authOverlay');
       if (!user) {
         // Not signed in — redirect to login
-        window.location.href = 'index.html';
+        window.location.href = 'login.html';
         return;
       }
       CURRENT_USER = user;
@@ -7276,11 +7277,11 @@ function doSignOut() {
   if (FB_AUTH) {
     FB_AUTH.signOut().then(function() {
       sessionStorage.removeItem('nm_user');
-      window.location.href = 'index.html';
+      window.location.href = 'login.html';
     });
   } else {
     sessionStorage.removeItem('nm_user');
-    window.location.href = 'index.html';
+    window.location.href = 'login.html';
   }
 }
 
@@ -7349,7 +7350,7 @@ function confirmDeleteAccount() {
     .then(function() {
       sessionStorage.removeItem('nm_user');
       alert('Account deleted. Goodbye!');
-      window.location.href = 'index.html';
+      window.location.href = 'login.html';
     })
     .catch(function(e) {
       if (e.code === 'auth/requires-recent-login') {
@@ -7424,6 +7425,292 @@ function loadUserPrefs(uid) {
       }
     })
     .catch(function(){});
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// FUT DRAFT SYSTEM
+// ════════════════════════════════════════════════════════════════
+var DRAFT_PLAYERS = {
+  prem: [
+    {name:'Haaland',club:'Man City',nation:'Norway',pos:'ST',ovr:91,pac:88,sho:95,pas:65,dri:80,def:45,phy:88,col:'#6cabdd'},
+    {name:'Salah',club:'Liverpool',nation:'Egypt',pos:'RW',ovr:90,pac:88,sho:87,pas:80,dri:88,def:45,phy:74,col:'#c8102e'},
+    {name:'De Bruyne',club:'Man City',nation:'Belgium',pos:'CM',ovr:91,pac:76,sho:82,pas:93,dri:87,def:64,phy:78,col:'#6cabdd'},
+    {name:'Saka',club:'Arsenal',nation:'England',pos:'RW',ovr:87,pac:82,sho:82,pas:80,dri:86,def:54,phy:68,col:'#EF0107'},
+    {name:'Alexander-Arnold',club:'Liverpool',nation:'England',pos:'RB',ovr:87,pac:78,sho:72,pas:91,dri:80,def:77,phy:72,col:'#c8102e'},
+    {name:'Virgil',club:'Liverpool',nation:'Holland',pos:'CB',ovr:88,pac:78,sho:58,pas:70,dri:68,def:91,phy:88,col:'#c8102e'},
+    {name:'Alisson',club:'Liverpool',nation:'Brazil',pos:'GK',ovr:90,pac:50,sho:22,pas:78,dri:50,def:91,phy:72,col:'#c8102e'},
+    {name:'Rashford',club:'Man Utd',nation:'England',pos:'LW',ovr:84,pac:92,sho:80,pas:72,dri:84,def:38,phy:76,col:'#DA291C'},
+    {name:'Rice',club:'Arsenal',nation:'England',pos:'CDM',ovr:86,pac:72,sho:64,pas:78,dri:74,def:86,phy:84,col:'#EF0107'},
+    {name:'Ederson',club:'Man City',nation:'Brazil',pos:'GK',ovr:88,pac:55,sho:25,pas:82,dri:52,def:87,phy:78,col:'#6cabdd'},
+    {name:'Gabriel',club:'Arsenal',nation:'Brazil',pos:'CB',ovr:85,pac:72,sho:52,pas:65,dri:62,def:88,phy:86,col:'#EF0107'},
+    {name:'Trent',club:'Liverpool',nation:'England',pos:'RB',ovr:87,pac:78,sho:72,pas:91,dri:80,def:77,phy:72,col:'#c8102e'},
+    {name:'Watkins',club:'Aston Villa',nation:'England',pos:'ST',ovr:84,pac:86,sho:84,pas:72,dri:80,def:42,phy:78,col:'#95BFE5'},
+    {name:'Son',club:'Spurs',nation:'S Korea',pos:'LW',ovr:87,pac:86,sho:88,pas:82,dri:86,def:46,phy:70,col:'#132257'},
+    {name:'Bruno',club:'Man Utd',nation:'Portugal',pos:'CAM',ovr:88,pac:72,sho:84,pas:89,dri:86,def:60,phy:74,col:'#DA291C'},
+  ],
+  laliga: [
+    {name:'Vinicius',club:'Real Madrid',nation:'Brazil',pos:'LW',ovr:92,pac:95,sho:86,pas:78,dri:94,def:28,phy:71,col:'#FEBE10'},
+    {name:'Bellingham',club:'Real Madrid',nation:'England',pos:'CM',ovr:88,pac:75,sho:82,pas:85,dri:87,def:70,phy:82,col:'#FEBE10'},
+    {name:'Yamal',club:'Barcelona',nation:'Spain',pos:'RW',ovr:82,pac:91,sho:78,pas:76,dri:88,def:30,phy:55,col:'#A50044'},
+    {name:'Pedri',club:'Barcelona',nation:'Spain',pos:'CM',ovr:88,pac:74,sho:76,pas:89,dri:90,def:72,phy:62,col:'#A50044'},
+    {name:'Courtois',club:'Real Madrid',nation:'Belgium',pos:'GK',ovr:90,pac:52,sho:20,pas:72,dri:50,def:92,phy:86,col:'#FEBE10'},
+    {name:'Alaba',club:'Real Madrid',nation:'Austria',pos:'CB',ovr:85,pac:70,sho:52,pas:76,dri:72,def:88,phy:78,col:'#FEBE10'},
+    {name:'Kroos',club:'Real Madrid',nation:'Germany',pos:'CM',ovr:88,pac:58,sho:74,pas:93,dri:82,def:68,phy:64,col:'#FEBE10'},
+    {name:'Lewandowski',club:'Barcelona',nation:'Poland',pos:'ST',ovr:90,pac:78,sho:92,pas:78,dri:84,def:42,phy:82,col:'#A50044'},
+    {name:'Ter Stegen',club:'Barcelona',nation:'Germany',pos:'GK',ovr:89,pac:50,sho:22,pas:82,dri:48,def:90,phy:72,col:'#A50044'},
+    {name:'Carvajal',club:'Real Madrid',nation:'Spain',pos:'RB',ovr:86,pac:76,sho:64,pas:78,dri:78,def:86,phy:78,col:'#FEBE10'},
+  ],
+  bundesliga: [
+    {name:'Kane',club:'Bayern',nation:'England',pos:'ST',ovr:90,pac:80,sho:92,pas:82,dri:84,def:42,phy:84,col:'#DC052D'},
+    {name:'Sane',club:'Bayern',nation:'Germany',pos:'LW',ovr:87,pac:93,sho:80,pas:76,dri:88,def:32,phy:70,col:'#DC052D'},
+    {name:'Musiala',club:'Bayern',nation:'Germany',pos:'CAM',ovr:87,pac:80,sho:80,pas:82,dri:90,def:48,phy:62,col:'#DC052D'},
+    {name:'Neuer',club:'Bayern',nation:'Germany',pos:'GK',ovr:90,pac:55,sho:20,pas:76,dri:52,def:92,phy:82,col:'#DC052D'},
+    {name:'Wirtz',club:'Leverkusen',nation:'Germany',pos:'CAM',ovr:87,pac:80,sho:80,pas:84,dri:90,def:46,phy:66,col:'#E32221'},
+    {name:'Grimaldo',club:'Leverkusen',nation:'Spain',pos:'LB',ovr:86,pac:82,sho:70,pas:82,dri:82,def:82,phy:72,col:'#E32221'},
+  ],
+  seriea: [
+    {name:'Leao',club:'AC Milan',nation:'Portugal',pos:'LW',ovr:87,pac:94,sho:80,pas:74,dri:90,def:26,phy:72,col:'#FB090B'},
+    {name:'Lautaro',club:'Inter',nation:'Argentina',pos:'ST',ovr:88,pac:80,sho:88,pas:74,dri:84,def:44,phy:80,col:'#0068A8'},
+    {name:'Theo',club:'AC Milan',nation:'France',pos:'LB',ovr:85,pac:92,sho:72,pas:74,dri:84,def:76,phy:78,col:'#FB090B'},
+    {name:'Calhanoglu',club:'Inter',nation:'Turkey',pos:'CDM',ovr:86,pac:68,sho:78,pas:86,dri:82,def:76,phy:72,col:'#0068A8'},
+    {name:'Donnarumma',club:'PSG',nation:'Italy',pos:'GK',ovr:90,pac:52,sho:22,pas:68,dri:50,def:92,phy:88,col:'#004170'},
+  ],
+  ligue1: [
+    {name:'Mbappe',club:'PSG',nation:'France',pos:'ST',ovr:91,pac:97,sho:88,pas:80,dri:92,def:36,phy:76,col:'#004170'},
+    {name:'Hakimi',club:'PSG',nation:'Morocco',pos:'RB',ovr:87,pac:92,sho:70,pas:78,dri:82,def:78,phy:78,col:'#004170'},
+    {name:'Marquinhos',club:'PSG',nation:'Brazil',pos:'CB',ovr:87,pac:72,sho:52,pas:74,dri:70,def:90,phy:80,col:'#004170'},
+    {name:'Ugarte',club:'PSG',nation:'Uruguay',pos:'CDM',ovr:83,pac:70,sho:62,pas:76,dri:74,def:84,phy:82,col:'#004170'},
+  ],
+  mixed: []
+};
+// Mixed = all combined
+(function(){
+  var all = [];
+  ['prem','laliga','bundesliga','seriea','ligue1'].forEach(function(l){
+    DRAFT_PLAYERS[l].forEach(function(p){ all.push(p); });
+  });
+  DRAFT_PLAYERS.mixed = all;
+})();
+
+// Extra players for variety
+var EXTRA_PLAYERS = [
+  {name:'Messi',club:'Inter Miami',nation:'Argentina',pos:'RW',ovr:90,pac:78,sho:88,pas:90,dri:94,def:38,phy:62,col:'#f7b5cd'},
+  {name:'Haaland',club:'Man City',nation:'Norway',pos:'ST',ovr:91,pac:88,sho:95,pas:65,dri:80,def:45,phy:88,col:'#6cabdd'},
+  {name:'Mbappe',club:'Real Madrid',nation:'France',pos:'ST',ovr:91,pac:97,sho:88,pas:80,dri:92,def:36,phy:76,col:'#FEBE10'},
+  {name:'Rodri',club:'Man City',nation:'Spain',pos:'CDM',ovr:91,pac:70,sho:72,pas:86,dri:80,def:90,phy:84,col:'#6cabdd'},
+  {name:'Dunk',club:'Brighton',nation:'England',pos:'CB',ovr:82,pac:64,sho:48,pas:68,dri:58,def:86,phy:86,col:'#0057B8'},
+  {name:'Szczesny',club:'Barcelona',nation:'Poland',pos:'GK',ovr:85,pac:48,sho:18,pas:68,dri:44,def:86,phy:78,col:'#A50044'},
+  {name:'Odegaard',club:'Arsenal',nation:'Norway',pos:'CAM',ovr:88,pac:74,sho:78,pas:88,dri:86,def:62,phy:66,col:'#EF0107'},
+  {name:'Fernandez',club:'Chelsea',nation:'Argentina',pos:'CM',ovr:84,pac:72,sho:72,pas:82,dri:80,def:74,phy:78,col:'#034694'},
+  {name:'Kante',club:'Al-Ittihad',nation:'France',pos:'CDM',ovr:85,pac:78,sho:64,pas:74,dri:78,def:88,phy:84,col:'#f8c001'},
+];
+
+var FORMATIONS = {
+  '433': {
+    slots:[
+      {pos:'GK', x:50,y:88},
+      {pos:'LB', x:18,y:68},{pos:'CB', x:36,y:72},{pos:'CB', x:64,y:72},{pos:'RB', x:82,y:68},
+      {pos:'CM', x:25,y:50},{pos:'CDM', x:50,y:52},{pos:'CM', x:75,y:50},
+      {pos:'LW', x:20,y:26},{pos:'ST', x:50,y:18},{pos:'RW', x:80,y:26}
+    ]
+  },
+  '442': {
+    slots:[
+      {pos:'GK', x:50,y:88},
+      {pos:'LB', x:15,y:68},{pos:'CB', x:35,y:72},{pos:'CB', x:65,y:72},{pos:'RB', x:85,y:68},
+      {pos:'LM', x:15,y:48},{pos:'CM', x:37,y:52},{pos:'CM', x:63,y:52},{pos:'RM', x:85,y:48},
+      {pos:'ST', x:36,y:20},{pos:'ST', x:64,y:20}
+    ]
+  },
+  '352': {
+    slots:[
+      {pos:'GK', x:50,y:88},
+      {pos:'CB', x:25,y:72},{pos:'CB', x:50,y:74},{pos:'CB', x:75,y:72},
+      {pos:'LM', x:14,y:52},{pos:'CM', x:32,y:54},{pos:'CM', x:50,y:50},{pos:'CM', x:68,y:54},{pos:'RM', x:86,y:52},
+      {pos:'ST', x:36,y:20},{pos:'ST', x:64,y:20}
+    ]
+  },
+  '451': {
+    slots:[
+      {pos:'GK', x:50,y:88},
+      {pos:'LB', x:15,y:68},{pos:'CB', x:35,y:72},{pos:'CB', x:65,y:72},{pos:'RB', x:85,y:68},
+      {pos:'LM', x:14,y:48},{pos:'CM', x:30,y:52},{pos:'CM', x:50,y:52},{pos:'CM', x:70,y:52},{pos:'RM', x:86,y:48},
+      {pos:'ST', x:50,y:18}
+    ]
+  },
+  '532': {
+    slots:[
+      {pos:'GK', x:50,y:88},
+      {pos:'LB', x:12,y:66},{pos:'CB', x:28,y:72},{pos:'CB', x:50,y:74},{pos:'CB', x:72,y:72},{pos:'RB', x:88,y:66},
+      {pos:'CM', x:25,y:48},{pos:'CM', x:50,y:46},{pos:'CM', x:75,y:48},
+      {pos:'ST', x:36,y:20},{pos:'ST', x:64,y:20}
+    ]
+  }
+};
+
+var DRAFT_STATE = {
+  formation: '433',
+  league: 'mixed',
+  quality: 'ultimate',
+  picks: [],       // completed picks
+  currentSlot: 0, // which slot we're picking for
+  options: []     // 5 options for current pick
+};
+
+var CARD_COLORS = {
+  gold:'linear-gradient(160deg,#c8a84b,#7a5c1e)',
+  silver:'linear-gradient(160deg,#888,#555)',
+  toty:'linear-gradient(160deg,#0a0a2a,#1a1a4a)',
+  inform:'linear-gradient(160deg,#b05000,#7a3000)',
+  special:'linear-gradient(160deg,#003060,#001840)'
+};
+
+function draftSetFormation(f) { DRAFT_STATE.formation = f; }
+
+function startDraft() {
+  DRAFT_STATE.formation = document.getElementById('draftFormation').value;
+  DRAFT_STATE.league    = document.getElementById('draftLeague').value;
+  DRAFT_STATE.quality   = document.getElementById('draftQuality').value;
+  DRAFT_STATE.picks     = [];
+  DRAFT_STATE.currentSlot = 0;
+  document.getElementById('draftPickUI').style.display = 'block';
+  document.getElementById('draftSquad').style.display  = 'none';
+  draftNextPick();
+}
+
+function draftNextPick() {
+  var formation = FORMATIONS[DRAFT_STATE.formation] || FORMATIONS['433'];
+  var slots = formation.slots;
+  var idx = DRAFT_STATE.currentSlot;
+  if (idx >= slots.length) { draftComplete(); return; }
+  var slot = slots[idx];
+  document.getElementById('draftPickTitle').textContent = 'Picking: ' + slot.pos;
+  document.getElementById('draftPickSub').textContent   = 'Pick '+(idx+1)+' of '+slots.length+' · Choose from 5 options';
+  document.getElementById('draftPickProgress').textContent = (idx+1)+'/'+slots.length;
+  // Generate 5 options
+  var pool = DRAFT_PLAYERS[DRAFT_STATE.league] || DRAFT_PLAYERS.mixed;
+  pool = pool.concat(EXTRA_PLAYERS);
+  // Filter by roughly matching position or nearby
+  var posGroup = {
+    GK:['GK'], LB:['LB','CB'], RB:['RB','CB'], CB:['CB','LB','RB'],
+    LM:['LW','LM','CM'], RM:['RW','RM','CM'], LW:['LW','LM'],
+    RW:['RW','RM'], CM:['CM','CAM','CDM'], CAM:['CAM','CM'],
+    CDM:['CDM','CM'], ST:['ST','CF'], CF:['CF','ST']
+  };
+  var validPos = posGroup[slot.pos] || [slot.pos];
+  var filtered = pool.filter(function(p){ return validPos.indexOf(p.pos) !== -1; });
+  if (filtered.length < 5) filtered = pool; // fallback
+  // Shuffle and pick 5 unique
+  var shuffled = filtered.slice().sort(function(){ return Math.random()-.5; });
+  var seen = {};
+  var options = [];
+  for (var i=0; i<shuffled.length && options.length<5; i++) {
+    if (!seen[shuffled[i].name]) { seen[shuffled[i].name]=1; options.push(shuffled[i]); }
+  }
+  while (options.length < 5) options.push(pool[Math.floor(Math.random()*pool.length)]);
+  DRAFT_STATE.options = options;
+  renderDraftOptions(options, slot.pos);
+}
+
+function renderDraftOptions(options, pos) {
+  var grid = document.getElementById('draftOptions');
+  var html = '';
+  for (var i=0; i<options.length; i++) {
+    var p = options[i];
+    var ovr = DRAFT_STATE.quality==='ultimate' ? Math.max(p.ovr,85) :
+              DRAFT_STATE.quality==='gold'     ? Math.min(p.ovr,88) : p.ovr;
+    var type = ovr>=92?'toty':ovr>=88?'inform':ovr>=84?'gold':'silver';
+    var bg = CARD_COLORS[type] || CARD_COLORS.gold;
+    var sc = function(v){ return v>=88?'#00ff88':v>=75?'#ffd23f':v>=60?'#ff8800':'#ff4444'; };
+    var cardStyle = [
+      'cursor:pointer;border-radius:10px;padding:10px 8px;',
+      'background:'+bg+';border:2px solid rgba(255,255,255,.12);',
+      'transition:all .2s;text-align:center;position:relative;overflow:hidden'
+    ].join('');
+    var hoverIn  = "this.style.transform='translateY(-5px) scale(1.03)';this.style.borderColor='rgba(255,255,255,.5)'";
+    var hoverOut = "this.style.transform='';this.style.borderColor='rgba(255,255,255,.12)'";
+    html += '<div onclick="draftPick('+i+')" style="'+cardStyle+'" onmouseover="'+hoverIn+'" onmouseout="'+hoverOut+'">';
+    html += '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.12),transparent);pointer-events:none"></div>';
+    html += '<div style="font-family:Bangers,cursive;font-size:1.4rem;color:#fff;text-shadow:0 0 10px rgba(0,0,0,.5)">'+ovr+'</div>';
+    html += '<div style="font-size:.55rem;font-weight:900;color:rgba(255,255,255,.7);letter-spacing:1px;margin-bottom:5px">'+pos+'</div>';
+    html += '<div style="font-size:2.4rem;margin:6px 0;filter:drop-shadow(0 0 8px rgba(255,255,255,.3))">&#128100;</div>';
+    html += '<div style="font-family:Fredoka One,cursive;font-size:.78rem;color:#fff;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+p.name+'</div>';
+    html += '<div style="font-size:.55rem;color:rgba(255,255,255,.55);font-weight:700;margin-bottom:7px">'+p.club+'</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:.55rem;font-weight:900">';
+    html += '<div style="color:'+sc(p.pac||75)+'">PAC '+(p.pac||75)+'</div>';
+    html += '<div style="color:'+sc(p.sho||75)+'">SHO '+(p.sho||75)+'</div>';
+    html += '<div style="color:'+sc(p.pas||75)+'">PAS '+(p.pas||75)+'</div>';
+    html += '<div style="color:'+sc(p.dri||75)+'">DRI '+(p.dri||75)+'</div>';
+    html += '<div style="color:'+sc(p.def||75)+'">DEF '+(p.def||75)+'</div>';
+    html += '<div style="color:'+sc(p.phy||75)+'">PHY '+(p.phy||75)+'</div>';
+    html += '</div></div>';
+  }
+  grid.innerHTML = html;
+}
+
+function draftPick(optionIdx) {
+  var player = DRAFT_STATE.options[optionIdx];
+  var formation = FORMATIONS[DRAFT_STATE.formation] || FORMATIONS['433'];
+  var slot = formation.slots[DRAFT_STATE.currentSlot];
+  DRAFT_STATE.picks.push({ player:player, slot:slot, slotIdx:DRAFT_STATE.currentSlot });
+  DRAFT_STATE.currentSlot++;
+  // Flash pick confirmation
+  var grid = document.getElementById('draftOptions');
+  var cards = grid.children;
+  if (cards[optionIdx]) {
+    cards[optionIdx].style.borderColor = '#ffd23f';
+    cards[optionIdx].style.boxShadow   = '0 0 20px rgba(255,210,63,.5)';
+  }
+  setTimeout(function() {
+    draftNextPick();
+  }, 350);
+}
+
+function draftComplete() {
+  document.getElementById('draftPickUI').style.display = 'none';
+  document.getElementById('draftSquad').style.display  = 'block';
+  // Calculate overall
+  var totalOvr = 0;
+  DRAFT_STATE.picks.forEach(function(p){ totalOvr += p.player.ovr || 80; });
+  var avgOvr = Math.round(totalOvr / DRAFT_STATE.picks.length);
+  document.getElementById('draftSquadRating').textContent = 'Overall: ' + avgOvr;
+  document.getElementById('draftSquadChem').textContent   = 'Chemistry: ' + (Math.floor(Math.random()*20)+80) + ' / 100';
+  renderDraftPitch();
+  launchConfetti();
+}
+
+function renderDraftPitch() {
+  var pitch = document.getElementById('draftPitchPlayers');
+  pitch.innerHTML = '';
+  DRAFT_STATE.picks.forEach(function(pick) {
+    var player = pick.player;
+    var slot   = pick.slot;
+    var statCol = function(v){ return v>=88?'#00ff88':v>=75?'#ffd23f':v>=60?'#ff8800':'#ff4444'; };
+    var ovr = player.ovr || 80;
+    var div = document.createElement('div');
+    div.style.cssText = 'position:absolute;left:'+slot.x+'%;top:'+slot.y+'%;transform:translate(-50%,-50%);text-align:center;cursor:pointer;transition:transform .2s;';
+    div.onmouseover = function(){ this.style.transform='translate(-50%,-50%) scale(1.12)'; };
+    div.onmouseout  = function(){ this.style.transform='translate(-50%,-50%)'; };
+    var type = ovr>=92?'toty':ovr>=88?'inform':ovr>=84?'gold':'silver';
+    var bg   = CARD_COLORS[type] || CARD_COLORS.gold;
+    div.innerHTML = '<div style="background:'+bg+';border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:5px 6px;min-width:62px;box-shadow:0 4px 12px rgba(0,0,0,.4)">'
+      +'<div style="font-family:Bangers,cursive;font-size:.95rem;color:#fff">'+ovr+'</div>'
+      +'<div style="font-size:.48rem;color:rgba(255,255,255,.65);font-weight:900">'+slot.pos+'</div>'
+      +'<div style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);margin:3px auto;display:flex;align-items:center;justify-content:center;font-size:1rem">👤</div>'
+      +'<div style="font-family:Fredoka One,cursive;font-size:.55rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:58px">'+player.name+'</div>'
+      +'</div>';
+    pitch.appendChild(div);
+  });
+}
+
+function exportSquad() {
+  var lines = DRAFT_STATE.picks.map(function(p){
+    return p.slot.pos + ': ' + p.player.name + ' (' + p.player.club + ') — OVR ' + p.player.ovr;
+  });
+  var text = 'My FUT Draft Squad:\n' + lines.join('\n');
+  try { navigator.clipboard.writeText(text); alert('Squad copied to clipboard!'); }
+  catch(e) { alert(text); }
 }
 
 window.addEventListener('load', function() {
@@ -8398,6 +8685,88 @@ window.addEventListener('load', function() {
   <!-- All lines scrollable -->
   <div id="vcAllLines" style="margin-top:10px;max-height:300px;overflow-y:auto"></div>
 </div>
+</div></div>
+
+
+<!-- ══ FUT DRAFT ═════════════════════════════════════════════════ -->
+<div class="pane" id="pane-draft"><div class="wrap" style="max-width:960px">
+<div class="sub-hdr"><div class="sub-logo">🎴 FUT DRAFT</div><div class="tagline">Pick Your Squad · 5 Picks Per Position · Build the Ultimate Team</div></div>
+
+<div class="card">
+  <div class="slabel">⚽ Draft Settings</div>
+  <div class="g3" style="margin-bottom:10px">
+    <div>
+      <div class="field-label">Formation</div>
+      <div class="sw"><select id="draftFormation" class="bc-ctrl" onchange="draftSetFormation(this.value)">
+        <option value="433">4-3-3</option>
+        <option value="442">4-4-2</option>
+        <option value="352">3-5-2</option>
+        <option value="451">4-5-1</option>
+        <option value="532">5-3-2</option>
+      </select></div>
+    </div>
+    <div>
+      <div class="field-label">League Pool</div>
+      <div class="sw"><select id="draftLeague" class="bc-ctrl">
+        <option value="mixed">🌍 Mixed (Best of World)</option>
+        <option value="prem">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+        <option value="laliga">🇪🇸 La Liga</option>
+        <option value="bundesliga">🇩🇪 Bundesliga</option>
+        <option value="seriea">🇮🇹 Serie A</option>
+        <option value="ligue1">🇫🇷 Ligue 1</option>
+      </select></div>
+    </div>
+    <div>
+      <div class="field-label">Card Quality</div>
+      <div class="sw"><select id="draftQuality" class="bc-ctrl">
+        <option value="ultimate">👑 Ultimate (85-99)</option>
+        <option value="gold">⭐ Gold (78-88)</option>
+        <option value="mixed">🔀 Mixed</option>
+      </select></div>
+    </div>
+  </div>
+  <button class="bigbtn btn-a2" onclick="startDraft()" id="draftStartBtn"><span class="bico">🎴</span> START DRAFT <span class="bico">🎴</span></button>
+</div>
+
+<!-- DRAFT PICK UI -->
+<div id="draftPickUI" style="display:none">
+  <div class="card" style="background:rgba(255,210,63,.06);border-color:rgba(255,210,63,.2)">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+      <div style="flex:1">
+        <div style="font-family:'Bangers',cursive;font-size:1.3rem;letter-spacing:3px;color:var(--a2)" id="draftPickTitle">Picking: ST</div>
+        <div style="font-size:.7rem;color:var(--muted);font-weight:700" id="draftPickSub">Pick 1 of 11 · Choose from 5 options</div>
+      </div>
+      <div style="font-family:'Bangers',cursive;font-size:2rem;color:var(--a2)" id="draftPickProgress">1/11</div>
+    </div>
+    <!-- 5 player option cards -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px" id="draftOptions"></div>
+  </div>
+</div>
+
+<!-- FINAL SQUAD -->
+<div id="draftSquad" style="display:none">
+  <div class="card">
+    <div class="slabel">🏆 Your Draft Squad</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="font-family:'Bangers',cursive;font-size:1.5rem;letter-spacing:2px;color:var(--a2)" id="draftSquadRating">Overall: —</div>
+      <div style="font-size:.72rem;color:var(--muted);font-weight:700;flex:1" id="draftSquadChem">Chemistry: —</div>
+      <button class="smBtn active" onclick="startDraft()" style="font-size:.76rem">🔄 New Draft</button>
+      <button class="smBtn" onclick="exportSquad()" style="font-size:.76rem">📋 Copy Squad</button>
+    </div>
+    <!-- Pitch view -->
+    <div id="draftPitch" style="background:linear-gradient(180deg,#1e6b1e,#165416);border-radius:12px;padding:20px;min-height:480px;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;opacity:.15">
+        <div style="border:2px solid #fff;border-radius:8px;position:absolute;inset:10px"></div>
+        <div style="border:2px solid #fff;width:160px;height:90px;position:absolute;top:10px;left:50%;transform:translateX(-50%);border-top:none"></div>
+        <div style="border:2px solid #fff;width:160px;height:90px;position:absolute;bottom:10px;left:50%;transform:translateX(-50%);border-bottom:none"></div>
+        <div style="border:2px solid #fff;border-radius:50%;width:80px;height:80px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></div>
+        <div style="background:#fff;width:3px;height:100%;position:absolute;left:50%;transform:translateX(-50%)"></div>
+      </div>
+      <div id="draftPitchPlayers" style="position:relative;z-index:1;height:100%"></div>
+    </div>
+  </div>
+</div>
+
 </div></div>
 
 </body>
